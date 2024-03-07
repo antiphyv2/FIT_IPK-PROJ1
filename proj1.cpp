@@ -48,7 +48,7 @@ void argument_parsing(int argc, char* argv[], server* server_info){
 }
 
 int main(int argc, char* argv[]){
-    server* server_info = new server;
+    server* server_info = new server{};
     argument_parsing(argc, argv, server_info);
     print_server(server_info);
 
@@ -58,14 +58,36 @@ int main(int argc, char* argv[]){
     //std::cout << hints.ai_addr << std::endl;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = 0;
 
     int retreived_info;
     if ((retreived_info = getaddrinfo(server_info->ip_hostname.c_str(), server_info->port.c_str(), &hints, &results)) != 0){
         std::cout << "ERR: Could not resolve hostname." << std::endl;
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
 
     std::cout << server_info->ip_hostname.c_str() << std::endl;
+
+    std::cout << "CREATING SOCKET..." << std::endl;
+
+    int socket_fd, socket_close;
+
+    if((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+        std::cerr << "ERROR CREATING SOCKET." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "SOCKET SUCCESFULLY CREATED." << std::endl;
+
+    if((socket_close = close(socket_fd)) == -1){
+        std::cerr << "ERROR CLOSING SOCKET." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "SOCKET SUCCESFULLY CLOSED." << std::endl;
+
+    delete server_info;
+
     std::cout << "END OF PROGRAM.";
     return 0;
 }
