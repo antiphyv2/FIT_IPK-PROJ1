@@ -33,6 +33,13 @@ void TCPMessage::process_local_msg(){
                 type = RENAME;
             } else if (fragment == "/help"){
                 type = HELP;
+                add_to_buffer("Available commands:\n");
+                add_to_buffer("/auth {Username} {Secret} {DisplayName}\n");
+                add_to_buffer("/join {ChannelID}\n");
+                add_to_buffer("/rename {DisplayName}\n");
+                add_to_buffer("/help for showing help.");
+                ready_to_send = false;
+                break;
             } else {    
                 type = MSG;
                 add_to_buffer("MSG FROM ");
@@ -155,6 +162,6 @@ size_t TCPMessage::get_buffer_size(){
 
 void TCPMessage::print_buffer(){
 
-    std::cout << buffer << std::endl;
+    std::cout << buffer;
 }
 

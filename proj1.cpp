@@ -83,6 +83,7 @@ int main(int argc, char* argv[]){
                 output_message.print_buffer();
                 std::cout << output_message.get_buffer_size() << std::endl;
             }
+            output_message.print_buffer();
             i++;
         }
 
