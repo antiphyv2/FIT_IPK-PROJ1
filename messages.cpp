@@ -1,10 +1,10 @@
 #include "messages.hpp"
 
-TCPMessage::TCPMessage(std::string input_msg){
+TCPMessage::TCPMessage(std::string input_msg, std::string dname){
     type = NOTHING;
     local_msg = input_msg;
     msg_from_server = "";
-    display_name = "";
+    display_name = dname;
 
     buffer[0] = '\0';
 }
@@ -23,15 +23,15 @@ void TCPMessage::process_local_msg(){
 
     for(const auto& fragment : msg_fragments){
         if(type == NOTHING){
-            if(msg_fragments[0] == "/auth"){
+            if(fragment == "/auth"){
                 type = AUTH;
                 add_to_buffer("AUTH ");
-            } else if(msg_fragments[0] == "/join"){
+            } else if(fragment == "/join"){
                 type = JOIN;
                 add_to_buffer("JOIN ");
-            } else if(msg_fragments[0] == "/rename"){
+            } else if(fragment == "/rename"){
                 type = RENAME;
-            } else if (msg_fragments[0] == "/help"){
+            } else if (fragment == "/help"){
                 type = HELP;
             } else {    
                 type = MSG;
@@ -75,9 +75,32 @@ void TCPMessage::process_local_msg(){
                     break;
                 }
             }
+        } else if(type == JOIN){
+            if(msg_fragments.size() != 2){
+                ready_to_send = false;
+                std::cerr << "Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+                break;
+            }
+            if(validate_msg_param(fragment, "ID")){
+                add_to_buffer(fragment);
+                add_to_buffer(" AS ");
+                add_to_buffer(display_name);
+            } else {
+                ready_to_send = false;
+                std::cerr << "Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+                break;
+            }
+        } else if(type == RENAME){
+            ready_to_send = false;
+            if(validate_msg_param(fragment, "ID")){
+                display_name = fragment;
+                
+            } else {
+                std::cerr << "Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
+                break;
+            }
         }
     }
-    
 }
 
 bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
@@ -108,6 +131,18 @@ void TCPMessage::add_line_ending(){
     buffer[length] = '\r';
     buffer[length + 1] = '\n';
     buffer[length + 2] = '\0';
+}
+
+std::string TCPMessage::get_display_name(){
+    return display_name;
+}
+
+void TCPMessage::set_display_name(std::string name){
+    display_name = name;
+}
+
+msg_types TCPMessage::get_msg_type(){
+    return type;
 }
 
 const char* TCPMessage::get_buffer(){

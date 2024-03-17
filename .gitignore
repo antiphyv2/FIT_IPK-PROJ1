@@ -10,3 +10,12 @@ build
 unused/random.cpp
 unused/server
 unused/server.cpp
+copy/messages.cpp
+copy/socket.hpp
+copy/socket.cpp
+copy/proj1.hpp
+copy/proj1.cpp
+copy/messages.hpp
+ipk24chat-client
+socket.o
+messages.o

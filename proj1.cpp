@@ -68,13 +68,17 @@ int main(int argc, char* argv[]){
     // }
     if(socket.get_socket_type() == SOCK_STREAM){
         int i = 0;
-        while(i < 2){
+        std::string dname = "";
+        while(i < 1){
             std::string message;
             std::getline(std::cin, message);
-            TCPMessage output_message(message);
+            TCPMessage output_message(message, dname);
             output_message.process_local_msg();
             output_message.add_line_ending();
-
+            
+            if(output_message.get_msg_type() == AUTH || output_message.get_msg_type() == RENAME){
+                dname = output_message.get_display_name();
+            }
             if(output_message.is_ready_to_send()){
                 output_message.print_buffer();
                 std::cout << output_message.get_buffer_size() << std::endl;

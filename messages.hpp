@@ -24,7 +24,7 @@ class TCPMessage {
         char buffer[1500];
 
     public:
-        TCPMessage(std::string input_msg);
+        TCPMessage(std::string input_msg, std::string dname);
 
         void process_local_msg();
         void process_msg_from_server();
@@ -39,6 +39,9 @@ class TCPMessage {
         const char* get_buffer();
         size_t get_buffer_size();
         void print_buffer();
+        std::string get_display_name();
+        void set_display_name(std::string name);
+        msg_types get_msg_type();
 
         void add_line_ending();
 };
