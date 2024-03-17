@@ -67,33 +67,21 @@ int main(int argc, char* argv[]){
     //     exit(EXIT_FAILURE);
     // }
     if(socket.get_socket_type() == SOCK_STREAM){
+        int i = 0;
+        while(i < 2){
+            std::string message;
+            std::getline(std::cin, message);
+            TCPMessage output_message(message);
+            output_message.process_local_msg();
+            output_message.add_line_ending();
 
-        
-        std::string message;
-        std::getline(std::cin, message);
-        TCPMessage output_message(message);
-        output_message.fill_output_buffer(message);
-        output_message.add_line_ending();
-        output_message.print_buffer();
-        std::cout << output_message.get_buffer_size() << std::endl;
+            if(output_message.is_ready_to_send()){
+                output_message.print_buffer();
+                std::cout << output_message.get_buffer_size() << std::endl;
+            }
+            i++;
+        }
 
-        // std::istringstream TCP_message(message);
-        // std::string fragment;
-        // std::cout << std::endl;
-        // while (TCP_message)
-        // {
-        //     TCP_message >> fragment;
-
-
-        //     if(fragment == "/auth"){
-
-        //     }
-
-
-
-        //     std::cout << fragment << std::endl;
-        //     fragment.clear();
-        // }
 
         socket.cleanup();
         std::cout << "END OF PROGRAM.";

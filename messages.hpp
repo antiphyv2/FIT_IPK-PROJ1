@@ -8,25 +8,37 @@ typedef enum {
     MSG,
     REPLY,
     NOT_REPLY,
+    RENAME,
+    HELP,
     NOTHING,
-
 } msg_types;
 
 class TCPMessage {
 
     private:
         msg_types type;
-        std::string message_to_process;
+        bool ready_to_send;
+        std::string display_name;
+        std::string local_msg;
+        std::string msg_from_server;
         char buffer[1500];
-        //char* buffer;
 
     public:
         TCPMessage(std::string input_msg);
-        void process_input_msg();
-        void print_message();
-        void fill_output_buffer(std::string msg_part);
+
+        void process_local_msg();
+        void process_msg_from_server();
+        bool validate_msg_param(std::string parameter, std::string pattern);
+        bool is_ready_to_send();
+
+
+        void print_local_message();
+        void print_msg_from_server();
+
+        void add_to_buffer(std::string msg_part);
         const char* get_buffer();
         size_t get_buffer_size();
         void print_buffer();
+
         void add_line_ending();
 };

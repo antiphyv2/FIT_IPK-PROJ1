@@ -10,6 +10,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
+#include <vector>
 
 typedef struct INFO{
     std::string protocol;
