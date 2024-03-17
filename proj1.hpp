@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <string>
 #include <cstring>
+#include <sstream>
 
 typedef struct INFO{
     std::string protocol;
@@ -16,16 +17,14 @@ typedef struct INFO{
     std::string port;
     uint16_t udp_timeout;
     uint16_t max_udp_retransmission;
-} server;
+} connection_info;
 
 typedef enum {
-    AUTH,
-    JOIN,
-    ERR,
-    BYE,
-    MSG,
-    REPLY,
-    NOT_REPLY,
+    START_STATE,
+    AUTH_STATE,
+    OPEN_STATE,
+    ERROR_STATE,
+    END_STATE,
 } states;
 
-void argument_parsing(int argc, char* argv[], server* server_info);
+int argument_parsing(int argc, char* argv[], connection_info* info);

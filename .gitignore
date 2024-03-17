@@ -7,3 +7,6 @@ proj1.o
 proj1
 build
 .VSCodeCounter
+unused/random.cpp
+unused/server
+unused/server.cpp

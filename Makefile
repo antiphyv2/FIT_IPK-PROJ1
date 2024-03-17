@@ -1,4 +1,4 @@
-PROJ=proj1
+PROJ=ipk24chat-client
 CFLAGS=-std=c++20 -Wall -Wextra
 CC=g++
 RM=rm -f

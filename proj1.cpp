@@ -1,93 +1,103 @@
-#include "proj1.hpp"
+//#include "proj1.hpp"
+#include "messages.hpp"
 
+int argument_parsing(int argc, char* argv[], connection_info* info){
 
-void print_server(server* server_info){
-    std::cout << "Protocol:" << server_info->protocol << std::endl;
-    std::cout << "IP/Hostname:" << server_info->ip_hostname << std::endl;
-    std::cout << "Port:" << server_info->port << std::endl;
-    std::cout << "UDP timeout:" << server_info->udp_timeout << std::endl;
-    std::cout << "Max UDP retransmission:" << server_info->max_udp_retransmission << std::endl;
-}
-
-
-void argument_parsing(int argc, char* argv[], server* server_info){
-    int cli_arg, server_port;
+int cli_arg, server_port;
+int sock_type = -1;
 
     //Argument parsing
     while((cli_arg = getopt(argc, argv, "t:s:p:d:r:h")) != -1){
         switch (cli_arg)
         {
         case 't':
-            server_info->protocol = optarg;
+            info->protocol = optarg;
+
+            if(info->protocol == "tcp"){
+                sock_type = SOCK_STREAM;
+            } else if (info->protocol == "udp"){
+                sock_type = SOCK_DGRAM;
+            } else{
+                delete info;
+                exit(EXIT_FAILURE);
+            }
             break;
         case 's':
-            server_info->ip_hostname = optarg;
+            info->ip_hostname = optarg;
             break;
         case 'p':
             server_port = std::stoi(optarg, nullptr, 10);
             if(server_port < 0 || server_port > 65535){
                 std::cerr << "ERR: Port out of range.";
                 exit(EXIT_FAILURE);
+                delete info;
             }
-            server_info->port = optarg;
+            info->port = optarg;
             break;
         case 'd':
-            server_info->udp_timeout = std::stoi(optarg, nullptr, 10);
+            info->udp_timeout = std::stoi(optarg, nullptr, 10);
             break;
         case 'r':
-            server_info->max_udp_retransmission = std::stoi(optarg, nullptr, 10);
+            info->max_udp_retransmission = std::stoi(optarg, nullptr, 10);
             break;
         case 'h':
             std::cout << "Usage: ./ipk -t <PROTOCOL> -s <SERVER IP> -p <PORT> -d <UDP_TIMEOUT> -r <UDP_RETRANSMISSION> " << std::endl;
+            delete info;
             exit(EXIT_SUCCESS);
             break;
         default:
             break;
         }
     }
+
+    return sock_type;
 }
 
 int main(int argc, char* argv[]){
-    server* server_info = new server{};
-    argument_parsing(argc, argv, server_info);
-    print_server(server_info);
+    connection_info* info = new connection_info();
+    int sock_type = argument_parsing(argc, argv, info);
+    ClientSocket socket(sock_type);
+    socket.set_arg_info(info);
+    socket.print_args();
+    socket.dns_lookup();
 
-    struct addrinfo hints = {0};
-    struct addrinfo* results;
-    //std::memset(&hints, 0, sizeof(hints));
-    //std::cout << hints.ai_addr << std::endl;
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_protocol = 0;
+    // if (connect(tcp_socket.get_socket_fd(), tcp_socket.get_dns_info()->ai_addr, tcp_socket.get_dns_info()->ai_addrlen) != 0){
+    //     std::cerr << "ERROR ESTABLISHING CONNECTION." << std::endl;
+    //     tcp_socket.cleanup();
+    //     exit(EXIT_FAILURE);
+    // }
+    if(socket.get_socket_type() == SOCK_STREAM){
 
-    int retreived_info;
-    if ((retreived_info = getaddrinfo(server_info->ip_hostname.c_str(), server_info->port.c_str(), &hints, &results)) != 0){
-        std::cout << "ERR: Could not resolve hostname." << std::endl;
-        //exit(EXIT_FAILURE);
+        
+        std::string message;
+        std::getline(std::cin, message);
+        TCPMessage output_message(message);
+        output_message.fill_output_buffer(message);
+        output_message.add_line_ending();
+        output_message.print_buffer();
+        std::cout << output_message.get_buffer_size() << std::endl;
+
+        // std::istringstream TCP_message(message);
+        // std::string fragment;
+        // std::cout << std::endl;
+        // while (TCP_message)
+        // {
+        //     TCP_message >> fragment;
+
+
+        //     if(fragment == "/auth"){
+
+        //     }
+
+
+
+        //     std::cout << fragment << std::endl;
+        //     fragment.clear();
+        // }
+
+        socket.cleanup();
+        std::cout << "END OF PROGRAM.";
+        return 0;
     }
 
-    std::cout << server_info->ip_hostname.c_str() << std::endl;
-
-    std::cout << "CREATING SOCKET..." << std::endl;
-
-    int socket_fd, socket_close;
-
-    if((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-        std::cerr << "ERROR CREATING SOCKET." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    std::cout << "SOCKET SUCCESFULLY CREATED." << std::endl;
-
-    if((socket_close = close(socket_fd)) == -1){
-        std::cerr << "ERROR CLOSING SOCKET." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    std::cout << "SOCKET SUCCESFULLY CLOSED." << std::endl;
-
-    delete server_info;
-
-    std::cout << "END OF PROGRAM.";
-    return 0;
 }
