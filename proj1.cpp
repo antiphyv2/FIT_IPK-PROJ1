@@ -107,7 +107,9 @@ int main(int argc, char* argv[]){
             }
         }
 
-
+        TCPMessage err_msg("stala se chyba",dname,ERR);
+        err_msg.copy_msg_to_buffer();
+        err_msg.print_buffer();
         socket.cleanup();
         std::cout << "END OF PROGRAM.";
         return 0;

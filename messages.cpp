@@ -41,14 +41,15 @@ void TCPMessage::copy_msg_to_buffer(){
                 break;
             } else {    
                 type = MSG;
-                if(msg_part_counter == 1){
                     add_to_buffer("MSG FROM ");
                     add_to_buffer(display_name);
                     add_to_buffer(" IS ");
                     if(validate_msg_param(message, "MSG")){
                         add_to_buffer(message);
+                    } else {
+                        std::cerr << "Wrong message format or length." << std::endl;
                     }
-                }
+                    break;
             }
         } else if(type == AUTH){
             if(msg_fragments.size() != 4){
@@ -118,9 +119,13 @@ void TCPMessage::copy_msg_to_buffer(){
             add_to_buffer(" IS ");
             if(validate_msg_param(message, "MSG")){
                 add_to_buffer(message);
+            } else {
+                std::cerr << "Wrong message format or length." << std::endl;
             }
+            break;
         } else if(type == BYE){
             add_to_buffer("BYE");
+            break;
         }
     }
     add_line_ending();
@@ -165,7 +170,7 @@ bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
 
         for(auto ch : parameter){
             //Check if in printable characters
-            if(!(ch >= '!' && ch <= '~' && ch != ' ')){
+            if(!((ch >= '!' && ch <= '~') || ch == ' ')){
                 return false;
             }
         }
