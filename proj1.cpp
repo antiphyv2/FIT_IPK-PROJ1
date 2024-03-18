@@ -2,6 +2,7 @@
 #include "messages.hpp"
 
 ClientSocket* socket_ptr;
+fsm_states mat_state;
 
 int argument_parsing(int argc, char* argv[], connection_info* info){
 
@@ -66,7 +67,7 @@ void graceful_exit(int signal){
 }
 
 int main(int argc, char* argv[]){
-    states mat_state = START_STATE;
+    mat_state = START_STATE;
     std::signal(SIGINT, graceful_exit);
     connection_info* info = new connection_info();
     int sock_type = argument_parsing(argc, argv, info);
@@ -86,7 +87,7 @@ int main(int argc, char* argv[]){
         while(true){
             std::string message;
             std::getline(std::cin, message);
-            if (std::cin.eof() || message == "") {
+            if (std::cin.eof()) {
                 TCPMessage bye_msg("BYE", BYE);
                 bye_msg.copy_msg_to_buffer();
                 bye_msg.print_buffer();
@@ -96,6 +97,11 @@ int main(int argc, char* argv[]){
                 }
                 break;
             }
+
+            if(message.empty()){
+                continue;
+            }
+
             TCPMessage output_message(message, USER_CMD);
             output_message.set_display_name(dname);
             output_message.copy_msg_to_buffer();
@@ -118,6 +124,22 @@ int main(int argc, char* argv[]){
         // TCPMessage err_msg("stala se chyba",dname,ERR);
         // err_msg.copy_msg_to_buffer();
         // err_msg.print_buffer();
+        TCPMessage msg("", TO_BE_DECIDED);
+        msg.add_to_buffer("ERR FROM antiphy IS chybicka");
+        msg.add_line_ending();
+        msg.process_recv_msg();
+        msg.clear_buffer();
+        msg.set_msg_type(TO_BE_DECIDED);
+        msg.add_to_buffer("MSG FROM antiphy IS ahoj cau");
+        msg.add_line_ending();
+        msg.process_recv_msg();
+        msg.clear_buffer();
+        msg.set_msg_type(TO_BE_DECIDED);
+        msg.add_to_buffer("REPLY OK IS ahoj cau");
+        msg.add_line_ending();
+        msg.process_recv_msg();
+        msg.clear_buffer();
+
         socket.cleanup();
         std::cout << "END OF PROGRAM.";
         return 0;

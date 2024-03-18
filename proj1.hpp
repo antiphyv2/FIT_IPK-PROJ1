@@ -27,7 +27,7 @@ typedef enum {
     OPEN_STATE,
     ERROR_STATE,
     END_STATE,
-} states;
+} fsm_states;
 
 int argument_parsing(int argc, char* argv[], connection_info* info);
 

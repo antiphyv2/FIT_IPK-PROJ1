@@ -135,6 +135,45 @@ void TCPMessage::copy_msg_to_buffer(){
     add_line_ending();
 }
 
+void TCPMessage::process_recv_msg(){
+    std::istringstream server_msg(buffer);
+    std::string msg_part;
+    std::vector<std::string> msg_vector;
+    while(server_msg >> msg_part){
+        msg_vector.push_back(msg_part);
+    }
+
+    if(type == TO_BE_DECIDED){
+        if(msg_vector[0] == "ERR"){
+            type = ERR;
+            std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
+            return;
+        } else if(msg_vector[0] == "BYE"){
+            type = BYE;
+        } else if(msg_vector[0] == "REPLY"){
+            if(msg_vector[1] == "OK"){
+                type = REPLY_OK;
+                std::cerr << "Success: " << msg_vector[3] << std::endl;
+            return;
+            } else if(msg_vector[1] == "NOK"){
+                type = REPLY_NOK;
+                std::cerr << "Failure: " << msg_vector[3] << std::endl;
+                return;
+        }
+        } else if(msg_vector[0] == "MSG"){
+            type = MSG;
+            std::string help_string(buffer);
+            size_t msg_start = help_string.find("IS");
+            help_string = help_string.substr(msg_start + 3);
+            std::cout << msg_vector[2] << ": " << help_string << std::endl;
+            return;
+        } else {
+            std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+            return;
+        }
+    }
+}
+
 bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
     if(pattern == "ID" || pattern == "SECRET"){
         if(pattern == "ID"){
@@ -217,6 +256,10 @@ void TCPMessage::set_display_name(std::string name){
 
 msg_types TCPMessage::get_msg_type(){
     return type;
+}
+
+void TCPMessage::set_msg_type(msg_types msg_type){
+    type = msg_type;
 }
 
 char* TCPMessage::get_buffer(){

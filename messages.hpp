@@ -6,11 +6,12 @@ typedef enum {
     ERR,
     BYE,
     MSG,
-    REPLY,
-    NOT_REPLY,
+    REPLY_OK,
+    REPLY_NOK,
     RENAME,
     HELP,
     USER_CMD,
+    TO_BE_DECIDED,
 } msg_types;
 
 class TCPMessage {
@@ -26,6 +27,7 @@ class TCPMessage {
         TCPMessage(std::string input_msg, msg_types msg_type);
 
         void copy_msg_to_buffer();
+        void process_recv_msg();
         bool validate_msg_param(std::string parameter, std::string pattern);
         bool is_ready_to_send();
         void print_message();
@@ -37,5 +39,6 @@ class TCPMessage {
         std::string get_display_name();
         void set_display_name(std::string name);
         msg_types get_msg_type();
+        void set_msg_type(msg_types msg_type);
         void add_line_ending();
 };
