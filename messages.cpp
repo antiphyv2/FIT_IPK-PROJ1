@@ -47,14 +47,14 @@ void TCPMessage::copy_msg_to_buffer(){
                     if(validate_msg_param(message, "MSG")){
                         add_to_buffer(message);
                     } else {
-                        std::cerr << "Wrong message format or length." << std::endl;
+                        std::cerr << "ERR: Wrong message format or length." << std::endl;
                     }
                     break;
             }
         } else if(type == AUTH){
             if(msg_fragments.size() != 4){
                 ready_to_send = false;
-                std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
+                std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
                 break;
             }
 
@@ -65,7 +65,7 @@ void TCPMessage::copy_msg_to_buffer(){
                     msg_part_counter++;
                 } else {
                     ready_to_send = false;
-                    std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
                     break;
                 }
             } else if(msg_part_counter == 2){
@@ -74,7 +74,7 @@ void TCPMessage::copy_msg_to_buffer(){
                     msg_part_counter++;
                 } else {
                     ready_to_send = false;
-                    std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
                     break;
                 }
             } else{
@@ -85,14 +85,14 @@ void TCPMessage::copy_msg_to_buffer(){
                     display_name = fragment;
                 } else {
                     ready_to_send = false;
-                    std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
                     break;
                 }
             }
         } else if(type == JOIN){
             if(msg_fragments.size() != 2){
                 ready_to_send = false;
-                std::cerr << "Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+                std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
                 break;
             }
             if(validate_msg_param(fragment, "ID")){
@@ -101,7 +101,7 @@ void TCPMessage::copy_msg_to_buffer(){
                 add_to_buffer(display_name);
             } else {
                 ready_to_send = false;
-                std::cerr << "Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+                std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
                 break;
             }
         } else if(type == RENAME){
@@ -110,7 +110,7 @@ void TCPMessage::copy_msg_to_buffer(){
                 display_name = fragment;
                 
             } else {
-                std::cerr << "Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
+                std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
                 break;
             }
         } else if(type == ERR){
@@ -120,7 +120,8 @@ void TCPMessage::copy_msg_to_buffer(){
             if(validate_msg_param(message, "MSG")){
                 add_to_buffer(message);
             } else {
-                std::cerr << "Wrong message format or length." << std::endl;
+                ready_to_send = false;
+                std::cerr << "ERR: Wrong message format or length." << std::endl;
             }
             break;
         } else if(type == BYE){

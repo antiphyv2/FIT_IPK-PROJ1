@@ -21,6 +21,7 @@ int sock_type = -1;
                 sock_type = SOCK_DGRAM;
             } else{
                 delete info;
+                std::cerr << "ERR: You must select either tcp or udp protocol" << std::endl;
                 exit(EXIT_FAILURE);
             }
             break;
@@ -30,7 +31,7 @@ int sock_type = -1;
         case 'p':
             server_port = std::stoi(optarg, nullptr, 10);
             if(server_port < 0 || server_port > 65535){
-                std::cerr << "ERR: Port out of range.";
+                std::cerr << "ERR: Port out of range." << std::endl;
                 exit(EXIT_FAILURE);
                 delete info;
             }
