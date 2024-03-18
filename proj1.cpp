@@ -1,6 +1,8 @@
 //#include "proj1.hpp"
 #include "messages.hpp"
 
+ClientSocket* socket_ptr;
+
 int argument_parsing(int argc, char* argv[], connection_info* info){
 
 int cli_arg, server_port;
@@ -53,10 +55,18 @@ int sock_type = -1;
     return sock_type;
 }
 
+
+void graceful_exit(int signal){
+    socket_ptr->cleanup();
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char* argv[]){
+    std::signal(SIGINT, graceful_exit);
     connection_info* info = new connection_info();
     int sock_type = argument_parsing(argc, argv, info);
     ClientSocket socket(sock_type);
+    socket_ptr = &socket;
     socket.set_arg_info(info);
     socket.print_args();
     socket.dns_lookup();
@@ -69,7 +79,7 @@ int main(int argc, char* argv[]){
     if(socket.get_socket_type() == SOCK_STREAM){
         int i = 0;
         std::string dname = "";
-        while(i < 1){
+        while(i < 5){
             std::string message;
             std::getline(std::cin, message);
             TCPMessage output_message(message, dname, NOTHING);

@@ -11,6 +11,7 @@
 #include <cstring>
 #include <sstream>
 #include <vector>
+#include <csignal>
 
 typedef struct INFO{
     std::string protocol;
