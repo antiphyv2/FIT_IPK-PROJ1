@@ -52,19 +52,14 @@ int sock_type = -1;
             break;
         }
     }
-
     return sock_type;
 }
-
 
 void graceful_exit(int signal){
     if(signal == SIGINT){
 
         TCPMessage bye_msg("BYE", "", BYE);
-        /*bye_msg.copy_msg_to_buffer();
-        bye_msg.print_buffer();
-        std::cout << bye_msg.get_buffer_size();*/
-
+        bye_msg.copy_msg_to_buffer();
         socket_ptr->cleanup();
     }
     exit(EXIT_SUCCESS);
@@ -91,7 +86,7 @@ int main(int argc, char* argv[]){
         while(true){
             std::string message;
             std::getline(std::cin, message);
-            if (std::cin.eof()) {
+            if (std::cin.eof() || message == "") {
                 TCPMessage bye_msg("BYE",dname, BYE);
                 bye_msg.copy_msg_to_buffer();
                 bye_msg.print_buffer();
@@ -109,7 +104,7 @@ int main(int argc, char* argv[]){
                 dname = output_message.get_display_name();
             }
 
-            if(!output_message.is_ready_to_send() && output_message.get_msg_type() == HELP){
+            if(output_message.get_msg_type() == HELP){
                 output_message.print_buffer();
             }
 

@@ -4,7 +4,6 @@ TCPMessage::TCPMessage(std::string input_msg, std::string dname, msg_types msg_t
     type = msg_type;
     message = input_msg;
     display_name = dname;
-
     buffer[0] = '\0';
 }
 
@@ -23,12 +22,27 @@ void TCPMessage::copy_msg_to_buffer(){
     for(const auto& fragment : msg_fragments){
         if(type == USER_CMD){
             if(fragment == "/auth"){
+                if(msg_fragments.size() != 4){
+                    ready_to_send = false;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
+                    break;
+                }
                 type = AUTH;
                 add_to_buffer("AUTH ");
             } else if(fragment == "/join"){
+                if(msg_fragments.size() != 2){
+                    ready_to_send = false;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+                    break;
+                }
                 type = JOIN;
                 add_to_buffer("JOIN ");
             } else if(fragment == "/rename"){
+                if(msg_fragments.size() != 2){
+                    ready_to_send = false;
+                    std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
+                    break;
+                }
                 type = RENAME;
             } else if (fragment == "/help"){
                 type = HELP;
@@ -52,12 +66,6 @@ void TCPMessage::copy_msg_to_buffer(){
                     break;
             }
         } else if(type == AUTH){
-            if(msg_fragments.size() != 4){
-                ready_to_send = false;
-                std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
-                break;
-            }
-
             if(msg_part_counter == 1){
                 if(validate_msg_param(fragment, "ID")){
                     add_to_buffer(fragment);
@@ -90,11 +98,6 @@ void TCPMessage::copy_msg_to_buffer(){
                 }
             }
         } else if(type == JOIN){
-            if(msg_fragments.size() != 2){
-                ready_to_send = false;
-                std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
-                break;
-            }
             if(validate_msg_param(fragment, "ID")){
                 add_to_buffer(fragment);
                 add_to_buffer(" AS ");

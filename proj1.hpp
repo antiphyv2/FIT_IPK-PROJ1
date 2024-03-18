@@ -30,3 +30,5 @@ typedef enum {
 } states;
 
 int argument_parsing(int argc, char* argv[], connection_info* info);
+
+void graceful_exit(int signal);

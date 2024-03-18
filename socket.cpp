@@ -2,7 +2,7 @@
 
 ClientSocket::ClientSocket(int sock_type){
     if((socket_fd = socket(AF_INET, sock_type, 0)) == -1){
-        std::cerr << "ERROR CREATING SOCKET." << std::endl;
+        std::cerr << "ERR: CREATING SOCKET." << std::endl;
         cleanup();
         exit(EXIT_FAILURE);
     }
@@ -22,7 +22,7 @@ void ClientSocket::cleanup(){
     }
     int socket_close;
     if((socket_close = close(socket_fd)) == -1){
-        std::cerr << "ERROR CLOSING SOCKET." << std::endl;
+        std::cerr << "ERR: CLOSING SOCKET." << std::endl;
         exit(EXIT_FAILURE);
     }
 
