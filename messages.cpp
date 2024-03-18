@@ -1,9 +1,9 @@
 #include "messages.hpp"
 
-TCPMessage::TCPMessage(std::string input_msg, std::string dname, msg_types msg_type){
+TCPMessage::TCPMessage(std::string input_msg, msg_types msg_type){
     type = msg_type;
     message = input_msg;
-    display_name = dname;
+    display_name = "";
     buffer[0] = '\0';
 }
 

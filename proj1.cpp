@@ -58,7 +58,7 @@ int sock_type = -1;
 void graceful_exit(int signal){
     if(signal == SIGINT){
 
-        TCPMessage bye_msg("BYE", "", BYE);
+        TCPMessage bye_msg("BYE", BYE);
         bye_msg.copy_msg_to_buffer();
         socket_ptr->cleanup();
     }
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
             std::string message;
             std::getline(std::cin, message);
             if (std::cin.eof() || message == "") {
-                TCPMessage bye_msg("BYE",dname, BYE);
+                TCPMessage bye_msg("BYE", BYE);
                 bye_msg.copy_msg_to_buffer();
                 bye_msg.print_buffer();
 
@@ -96,7 +96,8 @@ int main(int argc, char* argv[]){
                 }
                 break;
             }
-            TCPMessage output_message(message, dname, USER_CMD);
+            TCPMessage output_message(message, USER_CMD);
+            output_message.set_display_name(dname);
             output_message.copy_msg_to_buffer();
             
             //Set username or change in case of rename command

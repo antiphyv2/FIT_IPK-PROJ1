@@ -23,7 +23,7 @@ class TCPMessage {
         char buffer[1500];
 
     public:
-        TCPMessage(std::string input_msg, std::string dname, msg_types msg_type);
+        TCPMessage(std::string input_msg, msg_types msg_type);
 
         void copy_msg_to_buffer();
         bool validate_msg_param(std::string parameter, std::string pattern);
