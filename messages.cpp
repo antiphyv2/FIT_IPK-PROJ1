@@ -12,7 +12,7 @@ void TCPMessage::copy_msg_to_buffer(){
     std::istringstream TCP_message(message);
     std::string fragment;
     std::string support_string;
-    int word_order = 1;
+    int msg_part_counter = 1;
     ready_to_send = true;
 
     std::vector<std::string> msg_fragments;
@@ -21,7 +21,7 @@ void TCPMessage::copy_msg_to_buffer(){
     }
 
     for(const auto& fragment : msg_fragments){
-        if(type == NOTHING){
+        if(type == USER_CMD){
             if(fragment == "/auth"){
                 type = AUTH;
                 add_to_buffer("AUTH ");
@@ -41,7 +41,7 @@ void TCPMessage::copy_msg_to_buffer(){
                 break;
             } else {    
                 type = MSG;
-                if(word_order == 1){
+                if(msg_part_counter == 1){
                     add_to_buffer("MSG FROM ");
                     add_to_buffer(display_name);
                     add_to_buffer(" IS ");
@@ -57,21 +57,21 @@ void TCPMessage::copy_msg_to_buffer(){
                 break;
             }
 
-            if(word_order == 1){
+            if(msg_part_counter == 1){
                 if(validate_msg_param(fragment, "ID")){
                     add_to_buffer(fragment);
                     add_to_buffer(" AS ");
                     display_name = fragment;
-                    word_order++;
+                    msg_part_counter++;
                 } else {
                     ready_to_send = false;
                     std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
                     break;
                 }
-            } else if(word_order == 2){
+            } else if(msg_part_counter == 2){
                 if(validate_msg_param(fragment, "SECRET")){
                     support_string = fragment;
-                    word_order++;
+                    msg_part_counter++;
                 } else {
                     ready_to_send = false;
                     std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
@@ -112,6 +112,15 @@ void TCPMessage::copy_msg_to_buffer(){
                 std::cerr << "Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
                 break;
             }
+        } else if(type == ERR){
+            add_to_buffer("ERR FROM ");
+            add_to_buffer(display_name);
+            add_to_buffer(" IS ");
+            if(validate_msg_param(message, "MSG")){
+                add_to_buffer(message);
+            }
+        } else if(type == BYE){
+            add_to_buffer("BYE");
         }
     }
     add_line_ending();

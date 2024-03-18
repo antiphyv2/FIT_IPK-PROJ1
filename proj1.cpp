@@ -57,7 +57,15 @@ int sock_type = -1;
 
 
 void graceful_exit(int signal){
-    socket_ptr->cleanup();
+    if(signal == SIGINT){
+
+        TCPMessage bye_msg("BYE", "", BYE);
+        /*bye_msg.copy_msg_to_buffer();
+        bye_msg.print_buffer();
+        std::cout << bye_msg.get_buffer_size();*/
+
+        socket_ptr->cleanup();
+    }
     exit(EXIT_SUCCESS);
 }
 
@@ -77,12 +85,17 @@ int main(int argc, char* argv[]){
     //     exit(EXIT_FAILURE);
     // }
     if(socket.get_socket_type() == SOCK_STREAM){
-        int i = 0;
         std::string dname = "";
-        while(i < 5){
+        while(true){
             std::string message;
             std::getline(std::cin, message);
-            TCPMessage output_message(message, dname, NOTHING);
+            if (std::cin.eof()) {
+                TCPMessage bye_msg("BYE","", BYE);
+                bye_msg.copy_msg_to_buffer();
+                bye_msg.print_buffer();
+                break;
+            }
+            TCPMessage output_message(message, dname, USER_CMD);
             output_message.copy_msg_to_buffer();
             
             if(output_message.get_msg_type() == AUTH || output_message.get_msg_type() == RENAME){
@@ -92,7 +105,6 @@ int main(int argc, char* argv[]){
                 output_message.print_buffer();
                 std::cout << output_message.get_buffer_size() << std::endl;
             }
-            i++;
         }
 
 

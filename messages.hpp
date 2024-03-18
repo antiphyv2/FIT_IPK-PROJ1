@@ -10,7 +10,7 @@ typedef enum {
     NOT_REPLY,
     RENAME,
     HELP,
-    NOTHING,
+    USER_CMD,
 } msg_types;
 
 class TCPMessage {
