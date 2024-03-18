@@ -28,17 +28,14 @@ class TCPMessage {
         void copy_msg_to_buffer();
         bool validate_msg_param(std::string parameter, std::string pattern);
         bool is_ready_to_send();
-
-
         void print_message();
-
         void add_to_buffer(std::string msg_part);
-        const char* get_buffer();
+        char* get_buffer();
+        void clear_buffer();
         size_t get_buffer_size();
         void print_buffer();
         std::string get_display_name();
         void set_display_name(std::string name);
         msg_types get_msg_type();
-
         void add_line_ending();
 };

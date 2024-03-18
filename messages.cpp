@@ -62,7 +62,6 @@ void TCPMessage::copy_msg_to_buffer(){
                 if(validate_msg_param(fragment, "ID")){
                     add_to_buffer(fragment);
                     add_to_buffer(" AS ");
-                    display_name = fragment;
                     msg_part_counter++;
                 } else {
                     ready_to_send = false;
@@ -83,6 +82,7 @@ void TCPMessage::copy_msg_to_buffer(){
                     add_to_buffer(fragment);
                     add_to_buffer(" USING ");
                     add_to_buffer(support_string);
+                    display_name = fragment;
                 } else {
                     ready_to_send = false;
                     std::cerr << "Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
@@ -215,7 +215,7 @@ msg_types TCPMessage::get_msg_type(){
     return type;
 }
 
-const char* TCPMessage::get_buffer(){
+char* TCPMessage::get_buffer(){
     return buffer;
 }
 
@@ -225,5 +225,9 @@ size_t TCPMessage::get_buffer_size(){
 
 void TCPMessage::print_buffer(){
     std::cout << buffer;
+}
+
+void TCPMessage::clear_buffer(){
+    buffer[0] = '\0';
 }
 
