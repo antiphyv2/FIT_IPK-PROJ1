@@ -127,7 +127,53 @@ void TCPMessage::copy_msg_to_buffer(){
 }
 
 bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
-    return true;
+    if(pattern == "ID" || pattern == "SECRET"){
+        if(pattern == "ID"){
+            if(parameter.size() > 20){
+                return false;
+            }
+        } else {
+            if(parameter.size() > 128){
+                return false;
+            }
+        }
+
+        for(auto ch : parameter){
+            if(!std::isalnum(ch) && ch != '-'){
+                return false;
+            }
+        }
+        return true;
+
+    } else if(pattern == "DNAME"){
+        if(parameter.size() > 20){
+            return false;
+        }
+
+        for(auto ch : parameter){
+            //Check if in printable characters
+            if(!(ch >= '!' && ch <= '~')){
+                return false;
+            }
+        }
+        return true;
+
+    } else if(pattern == "MSG"){
+        if(parameter.size() > 1400){
+            return false;
+        }
+
+        for(auto ch : parameter){
+            //Check if in printable characters
+            if(!(ch >= '!' && ch <= '~' && ch != ' ')){
+                return false;
+            }
+        }
+        return true;
+
+    } else {
+        return false;
+    }
 }
 
 bool TCPMessage::is_ready_to_send(){
@@ -173,7 +219,6 @@ size_t TCPMessage::get_buffer_size(){
 }
 
 void TCPMessage::print_buffer(){
-
     std::cout << buffer;
 }
 
