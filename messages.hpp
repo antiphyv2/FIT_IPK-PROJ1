@@ -19,21 +19,18 @@ class TCPMessage {
         msg_types type;
         bool ready_to_send;
         std::string display_name;
-        std::string local_msg;
-        std::string msg_from_server;
+        std::string message;
         char buffer[1500];
 
     public:
-        TCPMessage(std::string input_msg, std::string dname);
+        TCPMessage(std::string input_msg, std::string dname, msg_types msg_type);
 
-        void process_local_msg();
-        void process_msg_from_server();
+        void copy_msg_to_buffer();
         bool validate_msg_param(std::string parameter, std::string pattern);
         bool is_ready_to_send();
 
 
-        void print_local_message();
-        void print_msg_from_server();
+        void print_message();
 
         void add_to_buffer(std::string msg_part);
         const char* get_buffer();

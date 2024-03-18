@@ -1,16 +1,15 @@
 #include "messages.hpp"
 
-TCPMessage::TCPMessage(std::string input_msg, std::string dname){
-    type = NOTHING;
-    local_msg = input_msg;
-    msg_from_server = "";
+TCPMessage::TCPMessage(std::string input_msg, std::string dname, msg_types msg_type){
+    type = msg_type;
+    message = input_msg;
     display_name = dname;
 
     buffer[0] = '\0';
 }
 
-void TCPMessage::process_local_msg(){
-    std::istringstream TCP_message(local_msg);
+void TCPMessage::copy_msg_to_buffer(){
+    std::istringstream TCP_message(message);
     std::string fragment;
     std::string support_string;
     int word_order = 1;
@@ -42,7 +41,14 @@ void TCPMessage::process_local_msg(){
                 break;
             } else {    
                 type = MSG;
-                add_to_buffer("MSG FROM ");
+                if(word_order == 1){
+                    add_to_buffer("MSG FROM ");
+                    add_to_buffer(display_name);
+                    add_to_buffer(" IS ");
+                    if(validate_msg_param(message, "MSG")){
+                        add_to_buffer(message);
+                    }
+                }
             }
         } else if(type == AUTH){
             if(msg_fragments.size() != 4){
@@ -108,6 +114,7 @@ void TCPMessage::process_local_msg(){
             }
         }
     }
+    add_line_ending();
 }
 
 bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
@@ -118,12 +125,8 @@ bool TCPMessage::is_ready_to_send(){
     return ready_to_send;
 }
 
-void TCPMessage::print_local_message(){
-    std::cout << local_msg << std::endl;
-}
-
-void TCPMessage::print_msg_from_server(){
-    std::cout << msg_from_server << std::endl;
+void TCPMessage::print_message(){
+    std::cout << message << std::endl;
 }
 
 void TCPMessage::add_to_buffer(std::string msg_part){
