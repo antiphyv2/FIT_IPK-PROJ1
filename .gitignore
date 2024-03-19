@@ -19,3 +19,5 @@ copy/messages.hpp
 ipk24chat-client
 socket.o
 messages.o
+server
+server.cpp
