@@ -96,9 +96,7 @@ int main(int argc, char* argv[]){
                     //send msg to server
                 }
                 break;
-            }
-
-            if(message.empty()){
+            } else if(message.empty()){
                 continue;
             }
 
@@ -111,35 +109,14 @@ int main(int argc, char* argv[]){
                 dname = output_message.get_display_name();
             }
 
-            if(output_message.get_msg_type() == HELP){
-                output_message.print_buffer();
-            }
-
             if(output_message.is_ready_to_send()){
                 output_message.print_buffer();
-                std::cout << output_message.get_buffer_size() << std::endl;
             }
         }
 
         // TCPMessage err_msg("stala se chyba",dname,ERR);
         // err_msg.copy_msg_to_buffer();
         // err_msg.print_buffer();
-        TCPMessage msg("", TO_BE_DECIDED);
-        msg.add_to_buffer("ERR FROM antiphy IS chybicka");
-        msg.add_line_ending();
-        msg.process_recv_msg();
-        msg.clear_buffer();
-        msg.set_msg_type(TO_BE_DECIDED);
-        msg.add_to_buffer("MSG FROM antiphy IS ahoj cau");
-        msg.add_line_ending();
-        msg.process_recv_msg();
-        msg.clear_buffer();
-        msg.set_msg_type(TO_BE_DECIDED);
-        msg.add_to_buffer("REPLY OK IS ahoj cau");
-        msg.add_line_ending();
-        msg.process_recv_msg();
-        msg.clear_buffer();
-
         socket.cleanup();
         std::cout << "END OF PROGRAM.";
         return 0;

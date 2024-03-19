@@ -46,12 +46,8 @@ void TCPMessage::copy_msg_to_buffer(){
                 type = RENAME;
             } else if (fragment == "/help"){
                 type = HELP;
-                add_to_buffer("Available commands:\n");
-                add_to_buffer("/auth {Username} {Secret} {DisplayName}\n");
-                add_to_buffer("/join {ChannelID}\n");
-                add_to_buffer("/rename {DisplayName}\n");
-                add_to_buffer("/help for showing help.");
                 ready_to_send = false;
+                std::cout << "Available commands:\n/auth {Username} {Secret} {DisplayName}\n/join {ChannelID}\n/rename {DisplayName}\n/help for showing help." << std::endl;
                 break;
             } else {    
                 type = MSG;
