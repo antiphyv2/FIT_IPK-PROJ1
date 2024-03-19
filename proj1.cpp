@@ -63,6 +63,7 @@ void graceful_exit(int signal){
 
         TCPMessage bye_msg("BYE", BYE);
         bye_msg.copy_msg_to_buffer();
+        socket_ptr->send_msg(bye_msg);
         socket_ptr->cleanup();
     }
     exit(EXIT_SUCCESS);
@@ -113,6 +114,7 @@ int main(int argc, char* argv[]){
 
             if(output_message.is_ready_to_send()){
                 output_message.print_buffer();
+                socket.send_msg(output_message);
             }
         }
 

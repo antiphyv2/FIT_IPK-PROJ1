@@ -1,5 +1,10 @@
 #ifndef MESSAGES_HPP
 #define MESSAGES_HPP
+#include <iostream>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <cstring>
 
 typedef enum {
     AUTH,
