@@ -1,4 +1,5 @@
-#include "socket.hpp"
+#ifndef MESSAGES_HPP
+#define MESSAGES_HPP
 
 typedef enum {
     AUTH,
@@ -42,3 +43,4 @@ class TCPMessage {
         void set_msg_type(msg_types msg_type);
         void add_line_ending();
 };
+#endif

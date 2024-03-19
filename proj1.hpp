@@ -1,3 +1,6 @@
+#ifndef MAIN_HPP
+#define MAIN_HPP
+
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -32,3 +35,4 @@ typedef enum {
 int argument_parsing(int argc, char* argv[], connection_info* info);
 
 void graceful_exit(int signal);
+#endif

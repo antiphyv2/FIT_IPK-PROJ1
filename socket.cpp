@@ -79,3 +79,12 @@ void ClientSocket::establish_connection(){
         exit(EXIT_FAILURE);
     }
 }
+
+void ClientSocket::send_msg(TCPMessage msg){
+    ssize_t bytes_sent = send(socket_fd, msg.get_buffer(), msg.get_buffer_size(), 0);
+    if (bytes_sent == -1) {
+        std::cerr << "Error sending message to server." << std::endl;
+    } else {
+        std::cout << "Message sent to server." << std::endl;
+    }
+}

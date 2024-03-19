@@ -1,5 +1,7 @@
 //#include "proj1.hpp"
+#include "proj1.hpp"
 #include "messages.hpp"
+#include "socket.hpp"
 
 ClientSocket* socket_ptr;
 fsm_states mat_state;

@@ -1,4 +1,8 @@
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
+
 #include "proj1.hpp"
+#include "messages.hpp"
 
 class ClientSocket{
     public:
@@ -21,5 +25,7 @@ class ClientSocket{
 
         void dns_lookup();
         void establish_connection();
+        void send_msg(TCPMessage msg);
         void print_args();
 };
+#endif

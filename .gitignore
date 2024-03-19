@@ -21,3 +21,4 @@ socket.o
 messages.o
 server
 server.cpp
+server.o
