@@ -80,11 +80,6 @@ int main(int argc, char* argv[]){
     socket.dns_lookup();
     socket.establish_connection();
 
-    // if (connect(tcp_socket.get_socket_fd(), tcp_socket.get_dns_info()->ai_addr, tcp_socket.get_dns_info()->ai_addrlen) != 0){
-    //     std::cerr << "ERROR ESTABLISHING CONNECTION." << std::endl;
-    //     tcp_socket.cleanup();
-    //     exit(EXIT_FAILURE);
-    // }
     if(socket.get_socket_type() == SOCK_STREAM){
         std::string dname = "";
         while(true){
@@ -93,7 +88,7 @@ int main(int argc, char* argv[]){
             if (std::cin.eof()) {
                 TCPMessage bye_msg("BYE", BYE);
                 bye_msg.copy_msg_to_buffer();
-                bye_msg.print_buffer();
+                socket.send_msg(bye_msg);
 
                 if(mat_state != START_STATE){
                     //send msg to server
@@ -118,9 +113,6 @@ int main(int argc, char* argv[]){
             }
         }
 
-        // TCPMessage err_msg("stala se chyba",dname,ERR);
-        // err_msg.copy_msg_to_buffer();
-        // err_msg.print_buffer();
         socket.cleanup();
         std::cout << "END OF PROGRAM.";
         return 0;
