@@ -2,6 +2,7 @@
 #define MAIN_HPP
 
 #include <iostream>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
@@ -32,7 +33,10 @@ typedef enum {
     END_STATE,
 } fsm_states;
 
-int argument_parsing(int argc, char* argv[], connection_info* info);
+class Signal_handler{
+    public:
+        static void graceful_exit(int signal);
+};
 
-void graceful_exit(int signal);
+int argument_parsing(int argc, char* argv[], connection_info* info);
 #endif

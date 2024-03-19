@@ -7,7 +7,7 @@ TCPMessage::TCPMessage(std::string input_msg, msg_types msg_type){
     buffer[0] = '\0';
 }
 
-void TCPMessage::copy_msg_to_buffer(){
+void TCPMessage::proces_outgoing_msg(){
     std::istringstream TCP_message(message);
     std::string fragment;
     std::string support_string;
@@ -131,7 +131,7 @@ void TCPMessage::copy_msg_to_buffer(){
     add_line_ending();
 }
 
-void TCPMessage::process_recv_msg(){
+void TCPMessage::process_inbound_msg(){
     std::istringstream server_msg(buffer);
     std::string msg_part;
     std::vector<std::string> msg_vector;

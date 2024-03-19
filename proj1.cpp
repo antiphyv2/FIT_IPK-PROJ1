@@ -4,7 +4,6 @@
 #include "socket.hpp"
 
 ClientSocket* socket_ptr;
-fsm_states mat_state;
 
 int argument_parsing(int argc, char* argv[], connection_info* info){
 
@@ -58,11 +57,10 @@ int sock_type = -1;
     return sock_type;
 }
 
-void graceful_exit(int signal){
+void Signal_handler::graceful_exit(int signal){
     if(signal == SIGINT){
-
         TCPMessage bye_msg("BYE", BYE);
-        bye_msg.copy_msg_to_buffer();
+        bye_msg.proces_outgoing_msg();
         socket_ptr->send_msg(bye_msg);
         socket_ptr->cleanup();
     }
@@ -70,52 +68,14 @@ void graceful_exit(int signal){
 }
 
 int main(int argc, char* argv[]){
-    mat_state = START_STATE;
-    std::signal(SIGINT, graceful_exit);
+    std::signal(SIGINT, Signal_handler::graceful_exit);
     connection_info* info = new connection_info();
     int sock_type = argument_parsing(argc, argv, info);
-    ClientSocket socket(sock_type);
+    ClientSocket socket(sock_type, info);
     socket_ptr = &socket;
-    socket.set_arg_info(info);
-    socket.dns_lookup();
-    socket.establish_connection();
-
-    if(socket.get_socket_type() == SOCK_STREAM){
-        std::string dname = "";
-        while(true){
-            std::string message;
-            std::getline(std::cin, message);
-            if (std::cin.eof()) {
-                TCPMessage bye_msg("BYE", BYE);
-                bye_msg.copy_msg_to_buffer();
-                socket.send_msg(bye_msg);
-
-                if(mat_state != START_STATE){
-                    //send msg to server
-                }
-                break;
-            } else if(message.empty()){
-                continue;
-            }
-
-            TCPMessage output_message(message, USER_CMD);
-            output_message.set_display_name(dname);
-            output_message.copy_msg_to_buffer();
-            
-            //Set username or change in case of rename command
-            if(output_message.get_msg_type() == AUTH || output_message.get_msg_type() == RENAME){
-                dname = output_message.get_display_name();
-            }
-
-            if(output_message.is_ready_to_send()){
-                output_message.print_buffer();
-                socket.send_msg(output_message);
-            }
-        }
-
-        socket.cleanup();
-        std::cout << "END OF PROGRAM.";
-        return 0;
-    }
+    socket.start_tcp_chat();
+    socket.cleanup();
+    std::cout << "END OF PROGRAM.";
+    return 0;
 
 }

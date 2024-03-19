@@ -32,8 +32,8 @@ class TCPMessage {
     public:
         TCPMessage(std::string input_msg, msg_types msg_type);
 
-        void copy_msg_to_buffer();
-        void process_recv_msg();
+        void proces_outgoing_msg();
+        void process_inbound_msg();
         bool validate_msg_param(std::string parameter, std::string pattern);
         bool is_ready_to_send();
         void print_message();
