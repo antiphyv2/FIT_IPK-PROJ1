@@ -70,3 +70,12 @@ void ClientSocket::dns_lookup(){
         exit(EXIT_FAILURE);
     }
 }
+
+void ClientSocket::establish_connection(){
+    int ret_val;
+    if((ret_val = connect(socket_fd, dns_results->ai_addr, dns_results->ai_addrlen)) != 0){
+        std::cout << "ERR: Could not connect to the server." << std::endl;
+        cleanup();
+        exit(EXIT_FAILURE);
+    }
+}

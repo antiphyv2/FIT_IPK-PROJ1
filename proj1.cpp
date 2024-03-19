@@ -74,8 +74,8 @@ int main(int argc, char* argv[]){
     ClientSocket socket(sock_type);
     socket_ptr = &socket;
     socket.set_arg_info(info);
-    socket.print_args();
     socket.dns_lookup();
+    socket.establish_connection();
 
     // if (connect(tcp_socket.get_socket_fd(), tcp_socket.get_dns_info()->ai_addr, tcp_socket.get_dns_info()->ai_addrlen) != 0){
     //     std::cerr << "ERROR ESTABLISHING CONNECTION." << std::endl;

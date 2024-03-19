@@ -20,5 +20,6 @@ class ClientSocket{
         connection_info* get_arg_info();
 
         void dns_lookup();
+        void establish_connection();
         void print_args();
 };
