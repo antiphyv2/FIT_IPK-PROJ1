@@ -131,8 +131,8 @@ void TCPMessage::proces_outgoing_msg(){
     add_line_ending();
 }
 
-void TCPMessage::process_inbound_msg(){
-    std::istringstream server_msg(buffer);
+void TCPMessage::process_inbound_msg(size_t bytes_rx){
+    std::istringstream server_msg(std::string(buffer, bytes_rx));
     std::string msg_part;
     std::vector<std::string> msg_vector;
     while(server_msg >> msg_part){
@@ -140,7 +140,7 @@ void TCPMessage::process_inbound_msg(){
     }
 
     if(type == TO_BE_DECIDED){
-        if(msg_vector[0] == "ERR"){
+        if(msg_vector[0] == "ERR" && msg_vector[1] == "FROM"){
             type = ERR;
             std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
             return;
@@ -156,12 +156,16 @@ void TCPMessage::process_inbound_msg(){
                 std::cerr << "Failure: " << msg_vector[3] << std::endl;
                 return;
         }
-        } else if(msg_vector[0] == "MSG"){
+        } else if(msg_vector[0] == "MSG" && msg_vector[1] == "FROM"){
             type = MSG;
-            std::string help_string(buffer);
+            std::string help_string(buffer, bytes_rx);
             size_t msg_start = help_string.find("IS");
+            if (msg_start == std::string::npos){
+                std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+                return;
+            }
             help_string = help_string.substr(msg_start + 3);
-            std::cout << msg_vector[2] << ": " << help_string << std::endl;
+            std::cout << msg_vector[2] << ": " << help_string;
             return;
         } else {
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;

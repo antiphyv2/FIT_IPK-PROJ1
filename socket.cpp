@@ -2,7 +2,7 @@
 
 ClientSocket::ClientSocket(int sock_type,  connection_info* parsed_info){
 
-    socket_fd == -1;
+    socket_fd = -1;
     epoll_fd = -1;
     type = sock_type;
     dns_results = nullptr;
@@ -74,7 +74,8 @@ void ClientSocket::print_args(){
 }
 
 void ClientSocket::dns_lookup(){
-    struct addrinfo hints = {0};
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = type;
     hints.ai_protocol = 0;
@@ -100,9 +101,16 @@ void ClientSocket::send_msg(TCPMessage msg){
     ssize_t bytes_sent = send(socket_fd, msg.get_buffer(), msg.get_buffer_size(), 0);
     if (bytes_sent == -1) {
         std::cerr << "ERR: Message could not be send to server." << std::endl;
-    } else {
-        std::cout << "Message sent to server." << std::endl;
     }
+}
+
+size_t ClientSocket::accept_msg(TCPMessage* msg){
+    int bytes_rx = recv(socket_fd, msg->get_buffer(), 1500, 0);
+    if (bytes_rx <= 0){
+      std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+      cleanup();
+    }
+    return bytes_rx;
 }
 
 void ClientSocket::start_tcp_chat(){
@@ -110,46 +118,84 @@ void ClientSocket::start_tcp_chat(){
     dns_lookup();
     establish_connection();
 
+    struct epoll_event event;
+    event.events = EPOLLIN;
+    event.data.fd = get_socket_fd();
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, get_socket_fd(), &event) == -1) {
+        std::cerr << "ERR: EPOLL CTL." << std::endl;
+        cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    event.data.fd = STDIN_FILENO;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) == -1) {
+        std::cerr << "ERR: EPOLL CTL." << std::endl;
+        cleanup();
+        exit(EXIT_FAILURE);
+    }
+
     fsm_states client_state = START_STATE;
     std::string dname = "";
 
     if(get_socket_type() == SOCK_STREAM){
 
         while(true){
-            std::string message;
-            if(!std::getline(std::cin, message)){
-                TCPMessage bye_msg("BYE", BYE);
-                bye_msg.proces_outgoing_msg();
-                send_msg(bye_msg);
-                break;
+            struct epoll_event epl_events[2];
+            int event_num = epoll_wait(epoll_fd, epl_events, 2, -1);
+            if (event_num == -1) {
+                std::cerr << "ERR: EPOLL WAIT." << std::endl;
+                cleanup();
+                exit(EXIT_FAILURE);
             }
 
-            if(message.empty()){
-                continue;
+            for(int event_idx = 0; event_idx < event_num; event_idx++){
+                int current_fd = epl_events[event_idx].data.fd;
+
+                if(current_fd == get_socket_fd()){
+                    TCPMessage inbound_msg("", TO_BE_DECIDED);
+                    size_t bytes_rx = accept_msg(&inbound_msg);
+                    inbound_msg.process_inbound_msg(bytes_rx);
+                    
+                    if(inbound_msg.get_msg_type() == REPLY_OK && client_state == START_STATE){
+                        client_state = OPEN_STATE;
+                    }
+                } else if(current_fd == STDIN_FILENO){
+                    std::string message;
+                    if(!std::getline(std::cin, message)){
+                        TCPMessage bye_msg("BYE", BYE);
+                        bye_msg.proces_outgoing_msg();
+                        send_msg(bye_msg);
+                        cleanup();
+                        exit(EXIT_SUCCESS);
+                    }
+
+                    if(message.empty()){
+                        continue;
+                    }
+
+                    TCPMessage outgoing_msg(message, USER_CMD);
+                    outgoing_msg.set_display_name(dname);
+                    outgoing_msg.proces_outgoing_msg();
+                    
+                    //Set username or change in case of rename command
+                    if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
+                        dname = outgoing_msg.get_display_name();
+                    }
+
+                    if(outgoing_msg.is_ready_to_send()){
+                        if(client_state == START_STATE){
+                            if(outgoing_msg.get_msg_type() != AUTH){
+                                std::cerr << "ERR: You must authorize first." << std::endl;
+                            } else {
+                                send_msg(outgoing_msg);
+                            }
+                        } else if(client_state == OPEN_STATE){
+                            send_msg(outgoing_msg);
+                        }
+                    }
+                }
             }
 
-            TCPMessage outgoing_msg(message, USER_CMD);
-            outgoing_msg.set_display_name(dname);
-            outgoing_msg.proces_outgoing_msg();
-            
-            //Set username or change in case of rename command
-            if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
-                dname = outgoing_msg.get_display_name();
-            }
-
-            if(outgoing_msg.is_ready_to_send()){
-                outgoing_msg.print_buffer();
-                send_msg(outgoing_msg);
-            }
-
-            // if (std::cin.eof()) {
-
-
-            //     // if(client_state != START_STATE){
-            //     //     //send msg to server
-            //     // }
-            //     break;
-            // }
         }
     }   
 }

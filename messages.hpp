@@ -33,7 +33,7 @@ class TCPMessage {
         TCPMessage(std::string input_msg, msg_types msg_type);
 
         void proces_outgoing_msg();
-        void process_inbound_msg();
+        void process_inbound_msg(size_t bytes_rx);
         bool validate_msg_param(std::string parameter, std::string pattern);
         bool is_ready_to_send();
         void print_message();

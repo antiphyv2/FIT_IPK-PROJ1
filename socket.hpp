@@ -27,6 +27,7 @@ class ClientSocket{
         void dns_lookup();
         void establish_connection();
         void send_msg(TCPMessage msg);
+        size_t accept_msg(TCPMessage* msg);
         void print_args();
         void start_tcp_chat();
 };
