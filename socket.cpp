@@ -139,6 +139,10 @@ void ClientSocket::start_tcp_chat(){
 
     if(get_socket_type() == SOCK_STREAM){
 
+        std::queue<TCPMessage> msgQ;
+        TCPMessage auth_msg("", AUTH);
+        bool awaiting_reply = false;
+
         while(true){
             struct epoll_event epl_events[2];
             int event_num = epoll_wait(epoll_fd, epl_events, 2, -1);
@@ -156,8 +160,16 @@ void ClientSocket::start_tcp_chat(){
                     size_t bytes_rx = accept_msg(&inbound_msg);
                     inbound_msg.process_inbound_msg(bytes_rx);
                     
-                    if(inbound_msg.get_msg_type() == REPLY_OK && client_state == START_STATE){
+                    if(inbound_msg.get_msg_type() == REPLY_OK && client_state == AUTH_STATE){
+                        awaiting_reply = false;
                         client_state = OPEN_STATE;
+                        while(!msgQ.empty()){
+                            send_msg(msgQ.front());
+                            msgQ.pop();
+                        } 
+                    } else if(inbound_msg.get_msg_type() == REPLY_NOK && client_state == AUTH_STATE){
+                        awaiting_reply = true;
+                        send_msg(auth_msg);
                     }
                 } else if(current_fd == STDIN_FILENO){
                     std::string message;
@@ -187,10 +199,18 @@ void ClientSocket::start_tcp_chat(){
                             if(outgoing_msg.get_msg_type() != AUTH){
                                 std::cerr << "ERR: You must authorize first." << std::endl;
                             } else {
+                                awaiting_reply = true;
+                                client_state = AUTH_STATE;
+                                auth_msg = outgoing_msg;
                                 send_msg(outgoing_msg);
                             }
+                        } else if(client_state == AUTH_STATE){
+                            if(awaiting_reply == true){
+                                msgQ.push(outgoing_msg);
+                            }
+                            
                         } else if(client_state == OPEN_STATE){
-                            send_msg(outgoing_msg);
+                            send_msg(outgoing_msg);    
                         }
                     }
                 }
