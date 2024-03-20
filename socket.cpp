@@ -160,18 +160,58 @@ void ClientSocket::start_tcp_chat(){
                     size_t bytes_rx = accept_msg(&inbound_msg);
                     inbound_msg.process_inbound_msg(bytes_rx);
                     
-                    if(inbound_msg.get_msg_type() == REPLY_OK && client_state == AUTH_STATE){
-                        awaiting_reply = false;
-                        auth_sent = false;
-                        client_state = OPEN_STATE;
-                        while(!msgQ.empty()){
-                            send_msg(msgQ.front());
-                            msgQ.pop();
-                        } 
-                    } else if(inbound_msg.get_msg_type() == REPLY_NOK && client_state == AUTH_STATE){
-                        awaiting_reply = true;
-                        auth_sent = false;
+                    if(client_state == AUTH_STATE){
+                        if(inbound_msg.get_msg_type() == REPLY_OK){
+                            awaiting_reply = false;
+                            auth_sent = false;
+                            client_state = OPEN_STATE;
+                            while(!msgQ.empty()){
+                                send_msg(msgQ.front());
+                                msgQ.pop();
+                            } 
+                        } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                            awaiting_reply = true;
+                            auth_sent = false;
+                        } else if(inbound_msg.get_msg_type() == ERR){
+                            TCPMessage bye_msg("BYE", BYE);
+                            bye_msg.proces_outgoing_msg();
+                            send_msg(bye_msg);
+                            cleanup();
+                            exit(EXIT_SUCCESS);
+                        }
+                    } else if(client_state == OPEN_STATE){
+                        if(inbound_msg.get_msg_type() == ERR){
+                            TCPMessage bye_msg("BYE", BYE);
+                            bye_msg.proces_outgoing_msg();
+                            send_msg(bye_msg);
+                            cleanup();
+                            exit(EXIT_SUCCESS);
+                        } else if(inbound_msg.get_msg_type() == BYE){
+                            cleanup();
+                            exit(EXIT_SUCCESS);
+                        } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                            awaiting_reply = true;
+                        } else if(inbound_msg.get_msg_type() == REPLY_OK){
+                            awaiting_reply = false;
+                            while(!msgQ.empty()){
+                                send_msg(msgQ.front());
+                                msgQ.pop();
+                            }
+                        } else if(inbound_msg.get_msg_type() == MSG){
+                            continue;
+                        } else {
+                            TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                            err_msg.set_display_name(dname);
+                            err_msg.proces_outgoing_msg();
+                            send_msg(err_msg);
+                            TCPMessage bye_msg("BYE", BYE);
+                            bye_msg.proces_outgoing_msg();
+                            send_msg(bye_msg);
+                            cleanup();
+                            exit(EXIT_SUCCESS);
+                        }
                     }
+
                 } else if(current_fd == STDIN_FILENO){
                     std::string message;
                     if(!std::getline(std::cin, message)){
@@ -214,7 +254,14 @@ void ClientSocket::start_tcp_chat(){
                                     auth_sent = true;
                             }
                         } else if(client_state == OPEN_STATE){
-                            send_msg(outgoing_msg);    
+                            if(awaiting_reply == true){
+                                msgQ.push(outgoing_msg);
+                            } else {
+                                if(outgoing_msg.get_msg_type() == JOIN){
+                                    awaiting_reply = true;
+                                }
+                                send_msg(outgoing_msg); 
+                            }                               
                         }
                     }   
                 }
