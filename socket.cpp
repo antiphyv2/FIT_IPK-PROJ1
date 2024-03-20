@@ -140,8 +140,8 @@ void ClientSocket::start_tcp_chat(){
     if(get_socket_type() == SOCK_STREAM){
 
         std::queue<TCPMessage> msgQ;
-        TCPMessage auth_msg("", AUTH);
         bool awaiting_reply = false;
+        bool auth_sent = false;
 
         while(true){
             struct epoll_event epl_events[2];
@@ -162,6 +162,7 @@ void ClientSocket::start_tcp_chat(){
                     
                     if(inbound_msg.get_msg_type() == REPLY_OK && client_state == AUTH_STATE){
                         awaiting_reply = false;
+                        auth_sent = false;
                         client_state = OPEN_STATE;
                         while(!msgQ.empty()){
                             send_msg(msgQ.front());
@@ -169,7 +170,7 @@ void ClientSocket::start_tcp_chat(){
                         } 
                     } else if(inbound_msg.get_msg_type() == REPLY_NOK && client_state == AUTH_STATE){
                         awaiting_reply = true;
-                        send_msg(auth_msg);
+                        auth_sent = false;
                     }
                 } else if(current_fd == STDIN_FILENO){
                     std::string message;
@@ -200,22 +201,24 @@ void ClientSocket::start_tcp_chat(){
                                 std::cerr << "ERR: You must authorize first." << std::endl;
                             } else {
                                 awaiting_reply = true;
+                                auth_sent = true;
                                 client_state = AUTH_STATE;
-                                auth_msg = outgoing_msg;
                                 send_msg(outgoing_msg);
                             }
                         } else if(client_state == AUTH_STATE){
-                            if(awaiting_reply == true){
-                                msgQ.push(outgoing_msg);
+                            if (outgoing_msg.get_msg_type() != AUTH && !auth_sent && awaiting_reply){
+                                std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
+                            } else if (outgoing_msg.get_msg_type() != AUTH && auth_sent){
+                                    msgQ.push(outgoing_msg);
+                            } else if (outgoing_msg.get_msg_type() == AUTH){
+                                    auth_sent = true;
                             }
-                            
                         } else if(client_state == OPEN_STATE){
                             send_msg(outgoing_msg);    
                         }
-                    }
+                    }   
                 }
             }
-
         }
     }   
 }
