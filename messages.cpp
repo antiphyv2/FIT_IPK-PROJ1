@@ -138,10 +138,16 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
     while(server_msg >> msg_part){
         msg_vector.push_back(msg_part);
     }
+    clear_buffer();
 
     if(type == TO_BE_DECIDED){
         if(msg_vector[0] == "ERR" && msg_vector[1] == "FROM"){
             type = ERR;
+            // add_to_buffer("ERR FROM ");
+            // add_to_buffer(msg_vector[2]);
+            // add_to_buffer(": ");
+            // add_to_buffer(msg_vector[4]);
+            // add_line_ending();
             std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
             return;
         } else if(msg_vector[0] == "BYE"){
@@ -149,11 +155,17 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
         } else if(msg_vector[0] == "REPLY"){
             if(msg_vector[1] == "OK"){
                 type = REPLY_OK;
-                std::cerr << "Success: " << msg_vector[3] << std::endl;
+                add_to_buffer("Success: ");
+                add_to_buffer(msg_vector[3]);
+                add_line_ending();
+                //std::cerr << "Success: " << msg_vector[3] << std::endl;
             return;
             } else if(msg_vector[1] == "NOK"){
                 type = REPLY_NOK;
-                std::cerr << "Failure: " << msg_vector[3] << std::endl;
+                add_to_buffer("Failure: ");
+                add_to_buffer(msg_vector[3]);
+                add_line_ending();
+                //std::cerr << "Failure: " << msg_vector[3] << std::endl;
                 return;
         }
         } else if(msg_vector[0] == "MSG" && msg_vector[1] == "FROM"){
@@ -161,13 +173,20 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
             std::string help_string(buffer, bytes_rx);
             size_t msg_start = help_string.find("IS");
             if (msg_start == std::string::npos){
+                //add_to_buffer("ERR: Unknown incoming message from server");
+                //add_line_ending();
                 std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                 return;
             }
             help_string = help_string.substr(msg_start + 3);
+            // add_to_buffer(msg_vector[2]);
+            // add_to_buffer(": ");
+            // add_to_buffer(help_string);
+            // add_line_ending();
             std::cout << msg_vector[2] << ": " << help_string;
             return;
         } else {
+            type = ERR;
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
             return;
         }

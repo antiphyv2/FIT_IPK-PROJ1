@@ -8,8 +8,9 @@ typedef struct CL_INFO{
     std::string dname;
     fsm_states client_state = START_STATE;
     std::queue<TCPMessage> msgQ;
-    bool awaiting_reply = false;
-    bool auth_sent = false;
+    //bool awaiting_reply = false;
+    //bool auth_sent = false;
+    bool reply_msg_sent = false;
 } client_info;
 class ClientSocket{
     public:

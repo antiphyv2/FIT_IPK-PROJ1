@@ -18,6 +18,8 @@
 #include <csignal>
 #include <queue>
 
+#include <poll.h>
+
 typedef struct INFO{
     std::string protocol;
     std::string ip_hostname;

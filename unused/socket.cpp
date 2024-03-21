@@ -16,6 +16,12 @@ void ClientSocket::create_socket(){
         exit(EXIT_FAILURE);
     }
 
+    // if((epoll_fd = epoll_create1(0)) == -1){
+    //     std::cerr << "ERR: CREATING EPOLL." << std::endl;
+    //     cleanup();
+    //     exit(EXIT_FAILURE);
+    // }
+
     std::cout << "SOCKET SUCCESFULLY CREATED." << std::endl;
 }
 
@@ -112,10 +118,11 @@ size_t ClientSocket::accept_msg(TCPMessage* msg){
 }
 
 bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
-        if(info->reply_msg_sent == true){
+        if(info->awaiting_reply == true){
            info->msgQ.push(outgoing_msg);
         } else {
             if(outgoing_msg.get_msg_type() == JOIN){
+                info->awaiting_reply = true;
                 info->reply_msg_sent = true;
                 return true;
             } else if(outgoing_msg.get_msg_type() == AUTH){
@@ -133,6 +140,21 @@ void ClientSocket::start_tcp_chat(){
     dns_lookup();
     establish_connection();
 
+    // struct epoll_event event;
+    // event.events = EPOLLIN;
+    // event.data.fd = get_socket_fd();
+    // if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, get_socket_fd(), &event) != 0) {
+    //     std::cerr << "ERR: EPOLL SOCKET CTL." << std::endl;
+    //     cleanup();
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // event.data.fd = STDIN_FILENO;
+    // if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) != 0) {
+    //     std::cerr << "ERR: EPOLL STDIN CTL." << std::endl;
+    //     cleanup();
+    //     exit(EXIT_FAILURE);
+    // }
     struct pollfd fds[2];
     fds[0].fd = socket_fd;
     fds[0].events = POLLIN;
@@ -164,20 +186,21 @@ void ClientSocket::start_tcp_chat(){
                     
                     if(info.client_state == AUTH_STATE){
                         if(inbound_msg.get_msg_type() == REPLY_OK){
+                            info.awaiting_reply = false;
                             if(info.reply_msg_sent){
                                 inbound_msg.print_buffer();
                                 info.reply_msg_sent = false;
-                                info.client_state = OPEN_STATE;
-                                while(!info.msgQ.empty()){
-                                    TCPMessage outgoing_msg = info.msgQ.front();
-                                    if(validate_msg_open(&info, outgoing_msg)){
-                                        send_msg(info.msgQ.front());
-                                    }
-                                    info.msgQ.pop();
-                                } 
                             }
-
+                            info.client_state = OPEN_STATE;
+                            while(!info.msgQ.empty()){
+                                TCPMessage outgoing_msg = info.msgQ.front();
+                                if(validate_msg_open(&info, outgoing_msg)){
+                                    send_msg(info.msgQ.front());
+                                }
+                                info.msgQ.pop();
+                            } 
                         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                            info.awaiting_reply = true;
                             if(info.reply_msg_sent){
                                 inbound_msg.print_buffer();
                                 info.reply_msg_sent = false;
@@ -200,24 +223,28 @@ void ClientSocket::start_tcp_chat(){
                             cleanup();
                             exit(EXIT_SUCCESS);
                         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                            if(info.reply_msg_sent){
+                            if(info.awaiting_reply == false){
+                                continue;
+                            } else {
                                 inbound_msg.print_buffer();
-                                info.reply_msg_sent = false;
                             }
+                            info.awaiting_reply = true;
                             info.reply_msg_sent = false;
                         } else if(inbound_msg.get_msg_type() == REPLY_OK){
-                                if(info.reply_msg_sent){
+                                if(info.awaiting_reply == false){
+                                    continue;
+                                } else {
                                     inbound_msg.print_buffer();
-                                    info.reply_msg_sent = false;
-                                    while(!info.msgQ.empty()){
-                                        TCPMessage outgoing_msg = info.msgQ.front();
-                                        if(validate_msg_open(&info, outgoing_msg)){
-                                            send_msg(info.msgQ.front());
-                                        }
-                                        info.msgQ.pop();
-                                    }
+                                    info.awaiting_reply = false;
                                 }
+                            while(!info.msgQ.empty()){
+                                TCPMessage outgoing_msg = info.msgQ.front();
+                                if(validate_msg_open(&info, outgoing_msg)){
+                                    send_msg(info.msgQ.front());
+                                }
+                                info.msgQ.pop();
 
+                            }
                         } else if(inbound_msg.get_msg_type() == MSG){
                             continue;
                         } else {
@@ -261,12 +288,13 @@ void ClientSocket::start_tcp_chat(){
                             if(outgoing_msg.get_msg_type() != AUTH){
                                 std::cerr << "ERR: You must authorize first." << std::endl;
                             } else {
+                                info.awaiting_reply = true;
                                 info.reply_msg_sent = true;
                                 info.client_state = AUTH_STATE;
                                 send_msg(outgoing_msg);
                             }
                         } else if(info.client_state == AUTH_STATE){
-                            if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent){
+                            if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent && info.awaiting_reply){
                                 std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
                             } else if (info.reply_msg_sent){
                                     info.msgQ.push(outgoing_msg);
