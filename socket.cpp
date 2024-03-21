@@ -10,7 +10,7 @@ ClientSocket::ClientSocket(int sock_type,  connection_info* parsed_info){
 }
 
 void ClientSocket::create_socket(){
-        if((socket_fd = socket(AF_INET, type, 0)) == -1){
+    if((socket_fd = socket(AF_INET, type, 0)) == -1){
         std::cerr << "ERR: CREATING SOCKET." << std::endl;
         cleanup();
         exit(EXIT_FAILURE);
@@ -55,6 +55,10 @@ int ClientSocket::get_socket_type(){
 
 int ClientSocket::get_socket_fd(){
     return socket_fd;
+}
+
+int ClientSocket::get_epoll_fd(){
+    return epoll_fd;
 }
 
 connection_info* ClientSocket::get_arg_info(){
@@ -113,6 +117,22 @@ size_t ClientSocket::accept_msg(TCPMessage* msg){
     return bytes_rx;
 }
 
+bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
+        if(info->awaiting_reply == true){
+           info->msgQ.push(outgoing_msg);
+        } else {
+            if(outgoing_msg.get_msg_type() == JOIN){
+                info->awaiting_reply = true;
+            } else if(outgoing_msg.get_msg_type() == AUTH){
+                std::cerr << "ERR: Already authorized." << std::endl;
+            } else {
+                return true;
+            }
+        
+        }
+        return false; 
+}
+
 void ClientSocket::start_tcp_chat(){
     create_socket();
     dns_lookup();
@@ -121,27 +141,22 @@ void ClientSocket::start_tcp_chat(){
     struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = get_socket_fd();
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, get_socket_fd(), &event) == -1) {
-        std::cerr << "ERR: EPOLL CTL." << std::endl;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, get_socket_fd(), &event) != 0) {
+        std::cerr << "ERR: EPOLL SOCKET CTL." << std::endl;
         cleanup();
         exit(EXIT_FAILURE);
     }
 
     event.data.fd = STDIN_FILENO;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) == -1) {
-        std::cerr << "ERR: EPOLL CTL." << std::endl;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) != 0) {
+        std::cerr << "ERR: EPOLL STDIN CTL." << std::endl;
         cleanup();
         exit(EXIT_FAILURE);
     }
 
-    fsm_states client_state = START_STATE;
-    std::string dname = "";
+    client_info info;
 
     if(get_socket_type() == SOCK_STREAM){
-
-        std::queue<TCPMessage> msgQ;
-        bool awaiting_reply = false;
-        bool auth_sent = false;
 
         while(true){
             struct epoll_event epl_events[2];
@@ -155,23 +170,23 @@ void ClientSocket::start_tcp_chat(){
             for(int event_idx = 0; event_idx < event_num; event_idx++){
                 int current_fd = epl_events[event_idx].data.fd;
 
-                if(current_fd == get_socket_fd()){
+                if(current_fd == socket_fd){
                     TCPMessage inbound_msg("", TO_BE_DECIDED);
                     size_t bytes_rx = accept_msg(&inbound_msg);
                     inbound_msg.process_inbound_msg(bytes_rx);
                     
-                    if(client_state == AUTH_STATE){
+                    if(info.client_state == AUTH_STATE){
                         if(inbound_msg.get_msg_type() == REPLY_OK){
-                            awaiting_reply = false;
-                            auth_sent = false;
-                            client_state = OPEN_STATE;
-                            while(!msgQ.empty()){
-                                send_msg(msgQ.front());
-                                msgQ.pop();
+                            info.awaiting_reply = false;
+                            info.auth_sent = false;
+                            info.client_state = OPEN_STATE;
+                            while(!info.msgQ.empty()){
+                                send_msg(info.msgQ.front());
+                                info.msgQ.pop();
                             } 
                         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                            awaiting_reply = true;
-                            auth_sent = false;
+                            info.awaiting_reply = true;
+                            info.auth_sent = false;
                         } else if(inbound_msg.get_msg_type() == ERR){
                             TCPMessage bye_msg("BYE", BYE);
                             bye_msg.proces_outgoing_msg();
@@ -179,7 +194,7 @@ void ClientSocket::start_tcp_chat(){
                             cleanup();
                             exit(EXIT_SUCCESS);
                         }
-                    } else if(client_state == OPEN_STATE){
+                    } else if(info.client_state == OPEN_STATE){
                         if(inbound_msg.get_msg_type() == ERR){
                             TCPMessage bye_msg("BYE", BYE);
                             bye_msg.proces_outgoing_msg();
@@ -190,18 +205,23 @@ void ClientSocket::start_tcp_chat(){
                             cleanup();
                             exit(EXIT_SUCCESS);
                         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                            awaiting_reply = true;
+                            info.awaiting_reply = true;
+                            info.auth_sent = false;
                         } else if(inbound_msg.get_msg_type() == REPLY_OK){
-                            awaiting_reply = false;
-                            while(!msgQ.empty()){
-                                send_msg(msgQ.front());
-                                msgQ.pop();
+                            info.awaiting_reply = false;
+                            while(!info.msgQ.empty()){
+                                TCPMessage outgoing_msg = info.msgQ.front();
+                                if(validate_msg_open(&info, outgoing_msg)){
+                                    send_msg(info.msgQ.front());
+                                }
+                                info.msgQ.pop();
+
                             }
                         } else if(inbound_msg.get_msg_type() == MSG){
                             continue;
                         } else {
                             TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
-                            err_msg.set_display_name(dname);
+                            err_msg.set_display_name(info.dname);
                             err_msg.proces_outgoing_msg();
                             send_msg(err_msg);
                             TCPMessage bye_msg("BYE", BYE);
@@ -227,42 +247,40 @@ void ClientSocket::start_tcp_chat(){
                     }
 
                     TCPMessage outgoing_msg(message, USER_CMD);
-                    outgoing_msg.set_display_name(dname);
+                    outgoing_msg.set_display_name(info.dname);
                     outgoing_msg.proces_outgoing_msg();
                     
                     //Set username or change in case of rename command
                     if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
-                        dname = outgoing_msg.get_display_name();
+                        info.dname = outgoing_msg.get_display_name();
                     }
 
                     if(outgoing_msg.is_ready_to_send()){
-                        if(client_state == START_STATE){
+                        if(info.client_state == START_STATE){
                             if(outgoing_msg.get_msg_type() != AUTH){
                                 std::cerr << "ERR: You must authorize first." << std::endl;
                             } else {
-                                awaiting_reply = true;
-                                auth_sent = true;
-                                client_state = AUTH_STATE;
+                                info.awaiting_reply = true;
+                                info.auth_sent = true;
+                                info.client_state = AUTH_STATE;
                                 send_msg(outgoing_msg);
                             }
-                        } else if(client_state == AUTH_STATE){
-                            if (outgoing_msg.get_msg_type() != AUTH && !auth_sent && awaiting_reply){
+                        } else if(info.client_state == AUTH_STATE){
+                            if (outgoing_msg.get_msg_type() != AUTH && !info.auth_sent && info.awaiting_reply){
                                 std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
-                            } else if (outgoing_msg.get_msg_type() != AUTH && auth_sent){
-                                    msgQ.push(outgoing_msg);
+                            } else if (info.auth_sent){
+                                    info.msgQ.push(outgoing_msg);
                             } else if (outgoing_msg.get_msg_type() == AUTH){
-                                    auth_sent = true;
+                                    info.auth_sent = true;
+                                    send_msg(outgoing_msg);
                             }
-                        } else if(client_state == OPEN_STATE){
-                            if(awaiting_reply == true){
-                                msgQ.push(outgoing_msg);
-                            } else {
-                                if(outgoing_msg.get_msg_type() == JOIN){
-                                    awaiting_reply = true;
-                                }
+                        } else if(info.client_state == OPEN_STATE){
+                            if(validate_msg_open(&info, outgoing_msg)){
                                 send_msg(outgoing_msg); 
-                            }                               
-                        }
+                            }
+                                
+                        }                               
+                        
                     }   
                 }
             }

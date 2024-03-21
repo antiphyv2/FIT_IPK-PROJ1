@@ -4,6 +4,13 @@
 #include "proj1.hpp"
 #include "messages.hpp"
 
+typedef struct CL_INFO{
+    std::string dname;
+    fsm_states client_state = START_STATE;
+    std::queue<TCPMessage> msgQ;
+    bool awaiting_reply = false;
+    bool auth_sent = false;
+} client_info;
 class ClientSocket{
     public:
 
@@ -20,6 +27,7 @@ class ClientSocket{
         void cleanup();
 
         int get_socket_fd();
+        int get_epoll_fd();
         int get_socket_type();
         struct addrinfo* get_dns_info();
         connection_info* get_arg_info();
