@@ -115,6 +115,7 @@ bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
         if(info->reply_msg_sent == true){
            info->msgQ.push(outgoing_msg);
         } else {
+            //TODO if outgoing message is bye, add to front, when reached -> exit client 
             if(outgoing_msg.get_msg_type() == JOIN){
                 info->reply_msg_sent = true;
                 return true;
@@ -144,8 +145,6 @@ void ClientSocket::start_tcp_chat(){
     if(get_socket_type() == SOCK_STREAM){
 
         while(true){
-            //struct epoll_event epl_events[2];
-            //int event_num = epoll_wait(epoll_fd, epl_events, 2, -1);
             int event_num = poll(fds, 2, -1);
             if (event_num == -1) {
                 std::cerr << "ERR: EPOLL WAIT." << std::endl;
@@ -153,61 +152,32 @@ void ClientSocket::start_tcp_chat(){
                 exit(EXIT_FAILURE);
             }
             for (int i = 0; i < 2; i++) {
-            //for(int event_idx = 0; event_idx < event_num; event_idx++){
-                //int current_fd = epl_events[event_idx].data.fd;
-            if (fds[i].revents & POLLIN) {
-                if (fds[i].fd == socket_fd) {
-                //if(current_fd == socket_fd){
-                    TCPMessage inbound_msg("", TO_BE_DECIDED);
-                    size_t bytes_rx = accept_msg(&inbound_msg);
-                    inbound_msg.process_inbound_msg(bytes_rx);
-                    
-                    if(info.client_state == AUTH_STATE){
-                        if(inbound_msg.get_msg_type() == REPLY_OK){
-                            if(info.reply_msg_sent){
-                                inbound_msg.print_buffer();
-                                info.reply_msg_sent = false;
-                                info.client_state = OPEN_STATE;
-                                while(!info.msgQ.empty()){
-                                    TCPMessage outgoing_msg = info.msgQ.front();
-                                    if(validate_msg_open(&info, outgoing_msg)){
-                                        send_msg(info.msgQ.front());
-                                    }
-                                    info.msgQ.pop();
-                                } 
-                            }
-
-                        } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                            if(info.reply_msg_sent){
-                                inbound_msg.print_buffer();
-                                info.reply_msg_sent = false;
-                            }
-                        } else if(inbound_msg.get_msg_type() == ERR){
-                            TCPMessage bye_msg("BYE", BYE);
-                            bye_msg.proces_outgoing_msg();
-                            send_msg(bye_msg);
-                            cleanup();
-                            exit(EXIT_SUCCESS);
-                        }
-                    } else if(info.client_state == OPEN_STATE){
-                        if(inbound_msg.get_msg_type() == ERR){
-                            TCPMessage bye_msg("BYE", BYE);
-                            bye_msg.proces_outgoing_msg();
-                            send_msg(bye_msg);
-                            cleanup();
-                            exit(EXIT_SUCCESS);
-                        } else if(inbound_msg.get_msg_type() == BYE){
-                            cleanup();
-                            exit(EXIT_SUCCESS);
-                        } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                            if(info.reply_msg_sent){
-                                inbound_msg.print_buffer();
-                                info.reply_msg_sent = false;
-                            }
-                            info.reply_msg_sent = false;
-                        } else if(inbound_msg.get_msg_type() == REPLY_OK){
+                if (fds[i].revents & POLLIN) {
+                    if (fds[i].fd == socket_fd) {
+                        TCPMessage inbound_msg("", TO_BE_DECIDED);
+                        size_t bytes_rx = accept_msg(&inbound_msg);
+                        inbound_msg.process_inbound_msg(bytes_rx);
+                        
+                        if(info.client_state == AUTH_STATE){
+                            if(inbound_msg.get_msg_type() == REPLY_OK){
                                 if(info.reply_msg_sent){
-                                    inbound_msg.print_buffer();
+                                    //inbound_msg.print_buffer();
+                                    inbound_msg.print_message();
+                                    info.reply_msg_sent = false;
+                                    info.client_state = OPEN_STATE;
+                                    while(!info.msgQ.empty()){
+                                        TCPMessage outgoing_msg = info.msgQ.front();
+                                        if(validate_msg_open(&info, outgoing_msg)){
+                                            send_msg(info.msgQ.front());
+                                        }
+                                        info.msgQ.pop();
+                                    } 
+                                }
+
+                            } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                                if(info.reply_msg_sent){
+                                    //inbound_msg.print_buffer();
+                                    inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                     while(!info.msgQ.empty()){
                                         TCPMessage outgoing_msg = info.msgQ.front();
@@ -215,75 +185,113 @@ void ClientSocket::start_tcp_chat(){
                                             send_msg(info.msgQ.front());
                                         }
                                         info.msgQ.pop();
-                                    }
+                                    } 
                                 }
+                            } else if(inbound_msg.get_msg_type() == ERR){
+                                TCPMessage bye_msg("BYE", BYE);
+                                bye_msg.proces_outgoing_msg();
+                                send_msg(bye_msg);
+                                cleanup();
+                                exit(EXIT_SUCCESS);
+                            }
+                        } else if(info.client_state == OPEN_STATE){
+                            if(inbound_msg.get_msg_type() == ERR){
+                                TCPMessage bye_msg("BYE", BYE);
+                                bye_msg.proces_outgoing_msg();
+                                send_msg(bye_msg);
+                                cleanup();
+                                exit(EXIT_SUCCESS);
+                            } else if(inbound_msg.get_msg_type() == BYE){
+                                cleanup();
+                                exit(EXIT_SUCCESS);
+                            } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                                if(info.reply_msg_sent){
+                                    //inbound_msg.print_buffer();
+                                    inbound_msg.print_message();
+                                    info.reply_msg_sent = false;
+                                }
+                                info.reply_msg_sent = false;
+                            } else if(inbound_msg.get_msg_type() == REPLY_OK){
+                                    if(info.reply_msg_sent){
+                                        //inbound_msg.print_buffer();
+                                        inbound_msg.print_message();
+                                        info.reply_msg_sent = false;
+                                        while(!info.msgQ.empty()){
+                                            TCPMessage outgoing_msg = info.msgQ.front();
+                                            if(validate_msg_open(&info, outgoing_msg)){
+                                                send_msg(info.msgQ.front());
+                                            }
+                                            info.msgQ.pop();
+                                        }
+                                    }
 
-                        } else if(inbound_msg.get_msg_type() == MSG){
-                            continue;
-                        } else {
-                            TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
-                            err_msg.set_display_name(info.dname);
-                            err_msg.proces_outgoing_msg();
-                            send_msg(err_msg);
+                            } else if(inbound_msg.get_msg_type() == MSG){
+                                continue;
+                            } else {
+                                TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                                err_msg.set_display_name(info.dname);
+                                err_msg.proces_outgoing_msg();
+                                send_msg(err_msg);
+                                TCPMessage bye_msg("BYE", BYE);
+                                bye_msg.proces_outgoing_msg();
+                                send_msg(bye_msg);
+                                cleanup();
+                                exit(EXIT_SUCCESS);
+                            }
+                        }
+                    } else if (fds[i].fd == STDIN_FILENO) {
+                        std::string message;
+                        if(!std::getline(std::cin, message)){
                             TCPMessage bye_msg("BYE", BYE);
+                            //pridat do fronty a zacit vyprazdnovat, kdyz prazdna ->konec
                             bye_msg.proces_outgoing_msg();
                             send_msg(bye_msg);
                             cleanup();
                             exit(EXIT_SUCCESS);
                         }
-                    }
-                } else if (fds[i].fd == STDIN_FILENO) {
-                //} else if(current_fd == STDIN_FILENO){
-                    std::string message;
-                    if(!std::getline(std::cin, message)){
-                        TCPMessage bye_msg("BYE", BYE);
-                        bye_msg.proces_outgoing_msg();
-                        send_msg(bye_msg);
-                        cleanup();
-                        exit(EXIT_SUCCESS);
-                    }
 
-                    if(message.empty()){
-                        continue;
-                    }
+                        if(message.empty()){
+                            continue;
+                        }
 
-                    TCPMessage outgoing_msg(message, USER_CMD);
-                    outgoing_msg.set_display_name(info.dname);
-                    outgoing_msg.proces_outgoing_msg();
-                    
-                    //Set username or change in case of rename command
-                    if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
-                        info.dname = outgoing_msg.get_display_name();
-                    }
-
-                    if(outgoing_msg.is_ready_to_send()){
-                        if(info.client_state == START_STATE){
-                            if(outgoing_msg.get_msg_type() != AUTH){
-                                std::cerr << "ERR: You must authorize first." << std::endl;
-                            } else {
-                                info.reply_msg_sent = true;
-                                info.client_state = AUTH_STATE;
-                                send_msg(outgoing_msg);
-                            }
-                        } else if(info.client_state == AUTH_STATE){
-                            if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent){
-                                std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
-                            } else if (info.reply_msg_sent){
-                                    info.msgQ.push(outgoing_msg);
-                            } else if (outgoing_msg.get_msg_type() == AUTH){
-                                    info.reply_msg_sent = true;
-                                    send_msg(outgoing_msg);
-                            }
-                        } else if(info.client_state == OPEN_STATE){
-                            if(validate_msg_open(&info, outgoing_msg)){
-                                send_msg(outgoing_msg); 
-                            }
-                                
-                        }                               
+                        TCPMessage outgoing_msg(message, USER_CMD);
+                        outgoing_msg.set_display_name(info.dname);
+                        outgoing_msg.proces_outgoing_msg();
                         
-                    }   
-                }
-            } }
+                        //Set username or change in case of rename command
+                        if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
+                            info.dname = outgoing_msg.get_display_name();
+                        }
+
+                        if(outgoing_msg.is_ready_to_send()){
+                            if(info.client_state == START_STATE){
+                                if(outgoing_msg.get_msg_type() != AUTH){
+                                    std::cerr << "ERR: You must authorize first." << std::endl;
+                                } else {
+                                    info.reply_msg_sent = true;
+                                    info.client_state = AUTH_STATE;
+                                    send_msg(outgoing_msg);
+                                }
+                            } else if(info.client_state == AUTH_STATE){
+                                if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent){
+                                    std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
+                                } else if (info.reply_msg_sent){
+                                        info.msgQ.push(outgoing_msg);
+                                } else if (outgoing_msg.get_msg_type() == AUTH){
+                                        info.reply_msg_sent = true;
+                                        send_msg(outgoing_msg);
+                                }
+                            } else if(info.client_state == OPEN_STATE){
+                                if(validate_msg_open(&info, outgoing_msg)){
+                                    send_msg(outgoing_msg); 
+                                }
+                                    
+                            }                               
+                            
+                        }   
+                    }
+                }    
+            } 
         }
     }   
 }

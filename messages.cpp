@@ -132,13 +132,13 @@ void TCPMessage::proces_outgoing_msg(){
 }
 
 void TCPMessage::process_inbound_msg(size_t bytes_rx){
+    std::string help_string(buffer, bytes_rx);
     std::istringstream server_msg(std::string(buffer, bytes_rx));
     std::string msg_part;
     std::vector<std::string> msg_vector;
     while(server_msg >> msg_part){
         msg_vector.push_back(msg_part);
     }
-    clear_buffer();
 
     if(type == TO_BE_DECIDED){
         if(msg_vector[0] == "ERR" && msg_vector[1] == "FROM"){
@@ -155,16 +155,28 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
         } else if(msg_vector[0] == "REPLY"){
             if(msg_vector[1] == "OK"){
                 type = REPLY_OK;
-                add_to_buffer("Success: ");
-                add_to_buffer(msg_vector[3]);
-                add_line_ending();
+                //add_to_buffer("Success: ");
+                size_t msg_start = help_string.find("IS");
+                help_string = help_string.substr(msg_start + 3);
+                //add_to_buffer(msg_vector[3]);
+                //add_to_buffer(help_string);
+                std::string reply_msg = "Success: ";
+                reply_msg.append(help_string);
+                message = reply_msg;
+                //add_line_ending();
                 //std::cerr << "Success: " << msg_vector[3] << std::endl;
-            return;
+                return;
             } else if(msg_vector[1] == "NOK"){
                 type = REPLY_NOK;
-                add_to_buffer("Failure: ");
-                add_to_buffer(msg_vector[3]);
-                add_line_ending();
+                //add_to_buffer("Failure: ");
+                size_t msg_start = help_string.find("IS");
+                help_string = help_string.substr(msg_start + 3);
+                //add_to_buffer(msg_vector[3]);
+                //add_to_buffer(help_string);
+                std::string reply_msg = "Failure: ";
+                reply_msg.append(help_string);
+                message = reply_msg;
+                //add_line_ending();
                 //std::cerr << "Failure: " << msg_vector[3] << std::endl;
                 return;
         }
@@ -248,7 +260,7 @@ bool TCPMessage::is_ready_to_send(){
 }
 
 void TCPMessage::print_message(){
-    std::cout << message << std::endl;
+    std::cout << message;
 }
 
 void TCPMessage::add_to_buffer(std::string msg_part){
@@ -294,6 +306,6 @@ void TCPMessage::print_buffer(){
 }
 
 void TCPMessage::clear_buffer(){
-    buffer[0] = '\0';
+    memset(buffer, 0, sizeof(buffer));
 }
 
