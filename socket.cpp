@@ -3,7 +3,6 @@
 ClientSocket::ClientSocket(int sock_type,  connection_info* parsed_info){
 
     socket_fd = -1;
-    epoll_fd = -1;
     type = sock_type;
     dns_results = nullptr;
     info = parsed_info;
@@ -31,12 +30,6 @@ void ClientSocket::cleanup(){
     if(socket_fd != -1){
         if((ret_val = close(socket_fd)) == -1){
             std::cerr << "ERR: CLOSING SOCKET." << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-    if(epoll_fd != -1){
-        if((ret_val= close(epoll_fd)) == -1){
-            std::cerr << "ERR: CLOSING EPOLL SOCKET." << std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -107,6 +100,7 @@ size_t ClientSocket::accept_msg(TCPMessage* msg){
     if (bytes_rx <= 0){
       std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
       cleanup();
+      exit(EXIT_FAILURE);
     }
     return bytes_rx;
 }
