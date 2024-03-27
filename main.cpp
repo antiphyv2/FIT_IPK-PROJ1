@@ -9,7 +9,7 @@ ClientSocket* socket_ptr;
 void Signal_handler::graceful_exit(int signal){
     if(signal == SIGINT){
         TCPMessage bye_msg("BYE", BYE);
-        bye_msg.proces_outgoing_msg();
+        bye_msg.process_outgoing_msg();
         socket_ptr->send_msg(bye_msg);
         socket_ptr->cleanup();
     }

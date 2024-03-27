@@ -1,13 +1,66 @@
 #include "messages.hpp"
 
-TCPMessage::TCPMessage(std::string input_msg, msg_types msg_type){
-    type = msg_type;
-    message = input_msg;
-    display_name = "";
+NetworkMessage::NetworkMessage(std::string input_msg, msg_types msg_type) : type(msg_type), ready_to_send(false), display_name(""), message(input_msg){
     buffer[0] = '\0';
+}     
+
+bool NetworkMessage::is_ready_to_send(){
+    return ready_to_send;
 }
 
-void TCPMessage::proces_outgoing_msg(){
+void NetworkMessage::print_message(){
+    std::cout << message;
+}
+
+std::string NetworkMessage::get_display_name(){
+    return display_name;
+}
+
+void NetworkMessage::set_display_name(std::string name){
+    display_name = name;
+}
+
+msg_types NetworkMessage::get_msg_type(){
+    return type;
+}
+
+void NetworkMessage::set_msg_type(msg_types msg_type){
+    type = msg_type;
+}
+
+char* NetworkMessage::get_buffer(){
+    return buffer;
+}
+
+size_t NetworkMessage::get_buffer_size(){
+    return std::strlen(buffer);
+}
+
+void NetworkMessage::print_buffer(){
+    std::cout << buffer;
+}
+
+void NetworkMessage::clear_buffer(){
+    memset(buffer, 0, sizeof(buffer));
+}
+
+TCPMessage::TCPMessage(std::string input_msg, msg_types msg_type) : NetworkMessage(input_msg, msg_type){}
+
+void TCPMessage::add_to_buffer(std::string msg_part){
+    size_t length = msg_part.length();
+    size_t position = std::strlen(buffer);
+    std::strncpy(buffer + position, msg_part.c_str(), length);
+    buffer[length + position] = '\0'; 
+}
+
+void TCPMessage::add_line_ending(){
+    size_t length = std::strlen(buffer);
+    buffer[length] = '\r';
+    buffer[length + 1] = '\n';
+    buffer[length + 2] = '\0';
+}
+
+void TCPMessage::process_outgoing_msg(){
     std::istringstream TCP_message(message);
     std::string fragment;
     std::string support_string;
@@ -272,59 +325,5 @@ bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
     } else {
         return false;
     }
-}
-
-bool TCPMessage::is_ready_to_send(){
-    return ready_to_send;
-}
-
-void TCPMessage::print_message(){
-    std::cout << message;
-}
-
-void TCPMessage::add_to_buffer(std::string msg_part){
-    size_t length = msg_part.length();
-    size_t position = std::strlen(buffer);
-    std::strncpy(buffer + position, msg_part.c_str(), length);
-    buffer[length + position] = '\0'; 
-}
-
-void TCPMessage::add_line_ending(){
-    size_t length = std::strlen(buffer);
-    buffer[length] = '\r';
-    buffer[length + 1] = '\n';
-    buffer[length + 2] = '\0';
-}
-
-std::string TCPMessage::get_display_name(){
-    return display_name;
-}
-
-void TCPMessage::set_display_name(std::string name){
-    display_name = name;
-}
-
-msg_types TCPMessage::get_msg_type(){
-    return type;
-}
-
-void TCPMessage::set_msg_type(msg_types msg_type){
-    type = msg_type;
-}
-
-char* TCPMessage::get_buffer(){
-    return buffer;
-}
-
-size_t TCPMessage::get_buffer_size(){
-    return std::strlen(buffer);
-}
-
-void TCPMessage::print_buffer(){
-    std::cout << buffer;
-}
-
-void TCPMessage::clear_buffer(){
-    memset(buffer, 0, sizeof(buffer));
 }
 

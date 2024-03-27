@@ -158,7 +158,7 @@ void ClientSocket::start_tcp_chat(){
                         if(info.client_state == START_STATE){
                             if(inbound_msg.get_msg_type() == ERR){
                                 TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.proces_outgoing_msg();
+                                bye_msg.process_outgoing_msg();
                                 send_msg(bye_msg);
                                 cleanup();
                                 exit(EXIT_SUCCESS);
@@ -179,7 +179,7 @@ void ClientSocket::start_tcp_chat(){
                                     }
                             } else if(inbound_msg.get_msg_type() == ERR){
                                     TCPMessage bye_msg("BYE", BYE);
-                                    bye_msg.proces_outgoing_msg();
+                                    bye_msg.process_outgoing_msg();
                                     send_msg(bye_msg);
                                     cleanup();
                                     exit(EXIT_SUCCESS);
@@ -187,7 +187,7 @@ void ClientSocket::start_tcp_chat(){
                         } else if(info.client_state == OPEN_STATE){
                             if(inbound_msg.get_msg_type() == ERR){
                                 TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.proces_outgoing_msg();
+                                bye_msg.process_outgoing_msg();
                                 send_msg(bye_msg);
                                 cleanup();
                                 exit(EXIT_SUCCESS);
@@ -211,10 +211,10 @@ void ClientSocket::start_tcp_chat(){
                             } else {
                                 TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
                                 err_msg.set_display_name(info.dname);
-                                err_msg.proces_outgoing_msg();
+                                err_msg.process_outgoing_msg();
                                 send_msg(err_msg);
                                 TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.proces_outgoing_msg();
+                                bye_msg.process_outgoing_msg();
                                 send_msg(bye_msg);
                                 cleanup();
                                 exit(EXIT_SUCCESS);
@@ -227,7 +227,7 @@ void ClientSocket::start_tcp_chat(){
                         std::string message;
                         if(!std::getline(std::cin, message)){
                             TCPMessage bye_msg("BYE", BYE);
-                            bye_msg.proces_outgoing_msg();
+                            bye_msg.process_outgoing_msg();
                             send_msg(bye_msg);
                             cleanup();
                             exit(EXIT_SUCCESS);
@@ -239,7 +239,7 @@ void ClientSocket::start_tcp_chat(){
 
                         TCPMessage outgoing_msg(message, USER_CMD);
                         outgoing_msg.set_display_name(info.dname);
-                        outgoing_msg.proces_outgoing_msg();
+                        outgoing_msg.process_outgoing_msg();
                         
                         //Set username or change in case of rename command
                         if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){

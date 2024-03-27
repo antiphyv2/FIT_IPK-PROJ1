@@ -21,24 +21,23 @@ typedef enum {
     TO_BE_DECIDED,
 } msg_types;
 
-class TCPMessage {
+class NetworkMessage{
 
-    private:
+    protected:
         msg_types type;
         bool ready_to_send;
         std::string display_name;
         std::string message;
         char buffer[1500];
+        
+        NetworkMessage(std::string input_msg, msg_types msg_type);
 
     public:
-        TCPMessage(std::string input_msg, msg_types msg_type);
-
-        void proces_outgoing_msg();
-        void process_inbound_msg(size_t bytes_rx);
-        bool validate_msg_param(std::string parameter, std::string pattern);
+        virtual void process_outgoing_msg() = 0;
+        virtual void process_inbound_msg(size_t bytes_rx) = 0;
+        virtual void add_to_buffer(std::string msg_part) = 0;
         bool is_ready_to_send();
         void print_message();
-        void add_to_buffer(std::string msg_part);
         char* get_buffer();
         void clear_buffer();
         size_t get_buffer_size();
@@ -47,6 +46,20 @@ class TCPMessage {
         void set_display_name(std::string name);
         msg_types get_msg_type();
         void set_msg_type(msg_types msg_type);
+
+        //NetworkMessage(std::string input_msg, msg_types msg_type);
+        virtual ~NetworkMessage() {}
+};
+
+class TCPMessage : public NetworkMessage{
+
+    public:
+        TCPMessage(std::string input_msg, msg_types msg_type);
+
+        void process_outgoing_msg() override;
+        void process_inbound_msg(size_t bytes_rx) override;
+        bool validate_msg_param(std::string parameter, std::string pattern);
+        void add_to_buffer(std::string msg_part) override;
         void add_line_ending();
 };
 #endif
