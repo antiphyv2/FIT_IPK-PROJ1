@@ -25,8 +25,8 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
             server_port = std::stoi(optarg, nullptr, 10);
             if(server_port < 0 || server_port > 65535){
                 std::cerr << "ERR: Port out of range." << std::endl;
-                exit(EXIT_FAILURE);
                 delete cli_info;
+                exit(EXIT_FAILURE);
             }
             cli_info->port = optarg;
             break;
@@ -45,5 +45,10 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
         }
     }
 
+    if(cli_info->sock_type != SOCK_DGRAM && cli_info->sock_type != SOCK_STREAM){
+        std::cerr << "ERR: No protocol selected." << std::endl;
+        delete cli_info;
+        exit(EXIT_FAILURE);
+    }
     return cli_info;
 }

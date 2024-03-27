@@ -119,7 +119,6 @@ bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
         if(info->reply_msg_sent == true){
            info->msgQ.push(outgoing_msg);
         } else {
-            //TODO if outgoing message is bye, add to front, when reached -> exit client 
             if(outgoing_msg.get_msg_type() == JOIN){
                 info->reply_msg_sent = true;
                 return true;
@@ -223,7 +222,6 @@ void ClientSocket::start_tcp_chat(){
                                 info.reply_msg_sent = false;
                             } else if(inbound_msg.get_msg_type() == REPLY_OK){
                                     if(info.reply_msg_sent){
-                                        //inbound_msg.print_buffer();
                                         inbound_msg.print_message();
                                         info.reply_msg_sent = false;
                                         while(!info.msgQ.empty()){
@@ -253,13 +251,13 @@ void ClientSocket::start_tcp_chat(){
                         std::string message;
                         if(!std::getline(std::cin, message)){
                             //pridat do fronty a zacit vyprazdnovat, kdyz prazdna ->konec
-                            while(!info.msgQ.empty()){
-                                TCPMessage outgoing_msg = info.msgQ.front();
-                                if(validate_msg_open(&info, outgoing_msg)){
-                                    send_msg(info.msgQ.front());
-                                }
-                                info.msgQ.pop();
-                            }
+                            // while(!info.msgQ.empty()){
+                            //     TCPMessage outgoing_msg = info.msgQ.front();
+                            //     if(validate_msg_open(&info, outgoing_msg)){
+                            //         send_msg(info.msgQ.front());
+                            //     }
+                            //     info.msgQ.pop();
+                            // }
                             TCPMessage bye_msg("BYE", BYE);
                             bye_msg.proces_outgoing_msg();
                             send_msg(bye_msg);

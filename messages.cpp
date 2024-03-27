@@ -172,6 +172,7 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                     if (std::regex_search(help_string, match_regex, pattern)) {
                         message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
                     } else {
+                        type = ERR;
                         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                         return;
                     }
@@ -187,6 +188,7 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                     if (std::regex_search(help_string, match_regex, pattern)) {
                         message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
                     } else {
+                        type = ERR;
                         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                         return;
                     }
