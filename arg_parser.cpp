@@ -8,11 +8,9 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
     while((cli_arg = getopt(argc, argv, "t:s:p:d:r:h")) != -1){
     switch (cli_arg){
         case 't':
-            cli_info->protocol = optarg;
-
-            if(cli_info->protocol == "tcp"){
+            if(strcmp(optarg, "tcp") == 0){
                 cli_info->sock_type = SOCK_STREAM;
-            } else if (cli_info->protocol == "udp"){
+            } else if (strcmp(optarg, "udp") == 0){
                 cli_info->sock_type = SOCK_DGRAM;
             } else{
                 delete cli_info;
@@ -42,7 +40,6 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
             std::cout << "Usage: ./ipk -t <PROTOCOL> -s <SERVER IP> -p <PORT> -d <UDP_TIMEOUT> -r <UDP_RETRANSMISSION> " << std::endl;
             delete cli_info;
             exit(EXIT_SUCCESS);
-            break;
         default:
             break;
         }

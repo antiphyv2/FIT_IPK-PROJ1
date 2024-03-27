@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include <regex>
 
 typedef enum {
     AUTH,

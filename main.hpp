@@ -18,9 +18,9 @@
 #include <csignal>
 #include <queue>
 #include <poll.h>
+#include <cctype>
 
 typedef struct INFO{
-    std::string protocol;
     std::string ip_hostname;
     std::string port;
     uint16_t udp_timeout;

@@ -1,7 +1,7 @@
 #ifndef ARG_PARSER_HPP
 #define ARG_PARSER_HPP
 
-#include "proj1.hpp"
+#include "main.hpp"
 
 class CLI_Parser{
 

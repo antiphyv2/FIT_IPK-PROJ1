@@ -53,7 +53,7 @@ struct addrinfo* ClientSocket::get_dns_info(){
 }
 
 void ClientSocket::print_args(){
-    std::cout << "Protocol:" << info->protocol << std::endl;
+    //std::cout << "Protocol:" << info->protocol << std::endl;
     std::cout << "IP/Hostname:" << info->ip_hostname << std::endl;
     std::cout << "Port:" << info->port << std::endl;
     std::cout << "UDP timeout:" << info->udp_timeout << std::endl;

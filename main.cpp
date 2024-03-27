@@ -1,5 +1,5 @@
 //#include "proj1.hpp"
-#include "proj1.hpp"
+#include "main.hpp"
 #include "messages.hpp"
 #include "socket.hpp"
 #include "arg_parser.hpp"

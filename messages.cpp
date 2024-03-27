@@ -147,70 +147,78 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
     }
 
     if(type == TO_BE_DECIDED){
-        if(msg_vector[0] == "ERR" && msg_vector[1] == "FROM"){
-            type = ERR;
-            // add_to_buffer("ERR FROM ");
-            // add_to_buffer(msg_vector[2]);
-            // add_to_buffer(": ");
-            // add_to_buffer(msg_vector[4]);
-            // add_line_ending();
-            std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
-            return;
-        } else if(msg_vector[0] == "BYE"){
-            type = BYE;
-        } else if(msg_vector[0] == "REPLY"){
-            if(msg_vector[1] == "OK"){
-                type = REPLY_OK;
-                //add_to_buffer("Success: ");
-                size_t msg_start = help_string.find("IS");
-                help_string = help_string.substr(msg_start + 3);
-                //add_to_buffer(msg_vector[3]);
-                //add_to_buffer(help_string);
-                std::string reply_msg = "Success: ";
-                reply_msg.append(help_string);
-                message = reply_msg;
-                //add_line_ending();
-                //std::cerr << "Success: " << msg_vector[3] << std::endl;
-                return;
-            } else if(msg_vector[1] == "NOK"){
-                type = REPLY_NOK;
-                //add_to_buffer("Failure: ");
-                size_t msg_start = help_string.find("IS");
-                help_string = help_string.substr(msg_start + 3);
-                //add_to_buffer(msg_vector[3]);
-                //add_to_buffer(help_string);
-                std::string reply_msg = "Failure: ";
-                reply_msg.append(help_string);
-                message = reply_msg;
-                //add_line_ending();
-                //std::cerr << "Failure: " << msg_vector[3] << std::endl;
-                return;
+        for (char &character : msg_vector[0]) {
+            character = std::toupper(character);
         }
-        } else if(msg_vector[0] == "MSG" && msg_vector[1] == "FROM"){
-            type = MSG;
-            //std::string help_string(buffer, bytes_rx);
-            size_t msg_start = help_string.find("IS");
-            if (msg_start == std::string::npos){
-                //add_to_buffer("ERR: Unknown incoming message from server");
-                //add_line_ending();
-                std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+
+        if(msg_vector.size() == 1 && msg_vector[0] == "BYE"){
+            type = BYE;
+            return;
+        }
+
+        if(msg_vector.size() >= 4){
+            std::string message_to_extract;
+
+            if(msg_vector[0] == "REPLY"){
+                for (char &character : msg_vector[1]) {
+                    character = std::toupper(character);
+                }
+
+                if(msg_vector[1] == "OK"){
+                    type = REPLY_OK;
+
+                    std::regex pattern("is", std::regex_constants::icase);
+                    std::smatch match_regex;
+                    if (std::regex_search(help_string, match_regex, pattern)) {
+                        message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
+                    } else {
+                        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+                        return;
+                    }
+                    std::string reply_msg = "Success: ";
+                    reply_msg.append(message_to_extract);
+                    message = reply_msg;
+                    return;
+                } else if(msg_vector[1] == "NOK"){
+                    type = REPLY_NOK;
+
+                    std::regex pattern("is", std::regex_constants::icase);
+                    std::smatch match_regex;
+                    if (std::regex_search(help_string, match_regex, pattern)) {
+                        message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
+                    } else {
+                        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+                        return;
+                    }
+                    std::string reply_msg = "Failure: ";
+                    reply_msg.append(message_to_extract);
+                    message = reply_msg;
+                    return;
+                }
+            } else if(msg_vector[0] == "ERR"){
+                type = ERR;
+                std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
+                return;
+            } else if(msg_vector[0] == "MSG"){
+                type = MSG;
+
+                std::regex pattern("is", std::regex_constants::icase);
+                std::smatch match_regex;
+                if (std::regex_search(help_string, match_regex, pattern)) {
+                    message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
+                } else {
+                    std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+                    return;
+                }
+
+                std::cout << msg_vector[2] << ": " << message_to_extract; //<< std::endl;
                 return;
             }
-            help_string = help_string.substr(msg_start + 3);
-            // add_to_buffer(msg_vector[2]);
-            // add_to_buffer(": ");
-            // add_to_buffer(help_string);
-            // add_line_ending();
-            //std::cout << std::endl << std::endl << buffer << std::endl << std::endl;
-            std::cout << msg_vector[2] << ": " << help_string;
-            return;
-        } else {
-            //DOCEASNE
-            type = ERR;
-            //std::cout << buffer;
-            std::cerr << "ERR: Unknown incoming message from server" << std::endl;
-            return;
-        }
+        } 
+
+        type = ERR;
+        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+        return;
     }
 }
 
