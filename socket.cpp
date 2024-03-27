@@ -1,9 +1,9 @@
 #include "socket.hpp"
 
-ClientSocket::ClientSocket(int sock_type,  connection_info* parsed_info){
+ClientSocket::ClientSocket(connection_info* parsed_info){
 
     socket_fd = -1;
-    type = sock_type;
+    type = parsed_info->sock_type;
     dns_results = nullptr;
     info = parsed_info;
 }
@@ -42,10 +42,6 @@ int ClientSocket::get_socket_type(){
 
 int ClientSocket::get_socket_fd(){
     return socket_fd;
-}
-
-int ClientSocket::get_epoll_fd(){
-    return epoll_fd;
 }
 
 connection_info* ClientSocket::get_arg_info(){
@@ -96,13 +92,27 @@ void ClientSocket::send_msg(TCPMessage msg){
 }
 
 size_t ClientSocket::accept_msg(TCPMessage* msg){
-    int bytes_rx = recv(socket_fd, msg->get_buffer(), 1500, 0);
-    if (bytes_rx <= 0){
-      std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
-      cleanup();
-      exit(EXIT_FAILURE);
+    size_t bytes_rx;
+    bool r_n_found = false;
+    char* buffer = msg->get_buffer();
+    size_t rx_total = 0;
+
+    while(!r_n_found){
+        bytes_rx = recv(socket_fd, buffer + rx_total, 1, 0);
+        if (bytes_rx <= 0){
+            std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+            cleanup();
+            exit(EXIT_FAILURE);
+        }
+        rx_total += 1;
+        for(size_t i = 0; i < rx_total - 1; i++){
+            if(buffer[i] == '\r' && buffer[i+1] == '\n'){
+                r_n_found = true;
+                break;
+            }
+        }
     }
-    return bytes_rx;
+    return rx_total;
 }
 
 bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
@@ -141,7 +151,7 @@ void ClientSocket::start_tcp_chat(){
         while(true){
             int event_num = poll(fds, 2, -1);
             if (event_num == -1) {
-                std::cerr << "ERR: EPOLL WAIT." << std::endl;
+                std::cerr << "ERR: POLL." << std::endl;
                 cleanup();
                 exit(EXIT_FAILURE);
             }
@@ -152,10 +162,18 @@ void ClientSocket::start_tcp_chat(){
                         size_t bytes_rx = accept_msg(&inbound_msg);
                         inbound_msg.process_inbound_msg(bytes_rx);
                         
-                        if(info.client_state == AUTH_STATE){
+                        if(info.client_state == START_STATE){
+                            if(inbound_msg.get_msg_type() == ERR){
+                                TCPMessage bye_msg("BYE", BYE);
+                                bye_msg.proces_outgoing_msg();
+                                send_msg(bye_msg);
+                                cleanup();
+                                exit(EXIT_SUCCESS);
+                            }
+                    
+                        } else if(info.client_state == AUTH_STATE){
                             if(inbound_msg.get_msg_type() == REPLY_OK){
                                 if(info.reply_msg_sent){
-                                    //inbound_msg.print_buffer();
                                     inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                     info.client_state = OPEN_STATE;
@@ -170,7 +188,6 @@ void ClientSocket::start_tcp_chat(){
 
                             } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                                 if(info.reply_msg_sent){
-                                    //inbound_msg.print_buffer();
                                     inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                     while(!info.msgQ.empty()){
@@ -200,7 +217,6 @@ void ClientSocket::start_tcp_chat(){
                                 exit(EXIT_SUCCESS);
                             } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                                 if(info.reply_msg_sent){
-                                    //inbound_msg.print_buffer();
                                     inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                 }
@@ -236,8 +252,15 @@ void ClientSocket::start_tcp_chat(){
                     } else if (fds[i].fd == STDIN_FILENO) {
                         std::string message;
                         if(!std::getline(std::cin, message)){
-                            TCPMessage bye_msg("BYE", BYE);
                             //pridat do fronty a zacit vyprazdnovat, kdyz prazdna ->konec
+                            while(!info.msgQ.empty()){
+                                TCPMessage outgoing_msg = info.msgQ.front();
+                                if(validate_msg_open(&info, outgoing_msg)){
+                                    send_msg(info.msgQ.front());
+                                }
+                                info.msgQ.pop();
+                            }
+                            TCPMessage bye_msg("BYE", BYE);
                             bye_msg.proces_outgoing_msg();
                             send_msg(bye_msg);
                             cleanup();

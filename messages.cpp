@@ -140,6 +140,12 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
         msg_vector.push_back(msg_part);
     }
 
+    if(msg_vector.size() == 0){
+        type = ERR;
+        std::cerr << "ERR: Empty server msg." << std::endl;
+        return;
+    }
+
     if(type == TO_BE_DECIDED){
         if(msg_vector[0] == "ERR" && msg_vector[1] == "FROM"){
             type = ERR;
@@ -182,7 +188,7 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
         }
         } else if(msg_vector[0] == "MSG" && msg_vector[1] == "FROM"){
             type = MSG;
-            std::string help_string(buffer, bytes_rx);
+            //std::string help_string(buffer, bytes_rx);
             size_t msg_start = help_string.find("IS");
             if (msg_start == std::string::npos){
                 //add_to_buffer("ERR: Unknown incoming message from server");
@@ -195,10 +201,13 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
             // add_to_buffer(": ");
             // add_to_buffer(help_string);
             // add_line_ending();
+            //std::cout << std::endl << std::endl << buffer << std::endl << std::endl;
             std::cout << msg_vector[2] << ": " << help_string;
             return;
         } else {
+            //DOCEASNE
             type = ERR;
+            //std::cout << buffer;
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
             return;
         }

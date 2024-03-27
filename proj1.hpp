@@ -17,7 +17,6 @@
 #include <vector>
 #include <csignal>
 #include <queue>
-
 #include <poll.h>
 
 typedef struct INFO{
@@ -26,6 +25,7 @@ typedef struct INFO{
     std::string port;
     uint16_t udp_timeout;
     uint16_t max_udp_retransmission;
+    uint16_t sock_type;
 } connection_info;
 
 typedef enum {

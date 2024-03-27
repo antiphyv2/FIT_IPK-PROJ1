@@ -4,31 +4,29 @@
 #include "proj1.hpp"
 #include "messages.hpp"
 
+
 typedef struct CL_INFO{
-    std::string dname;
-    fsm_states client_state = START_STATE;
-    std::queue<TCPMessage> msgQ;
-    //bool awaiting_reply = false;
-    //bool auth_sent = false;
-    bool reply_msg_sent = false;
+    std::string dname; //User display name
+    fsm_states client_state = START_STATE; //Current mat state
+    std::queue<TCPMessage> msgQ; //MSG queue for storing messages until processing is enabed
+    bool reply_msg_sent = false; //Message will require REPLY from server
 } client_info;
+
 class ClientSocket{
     public:
 
     private:
         int socket_fd; //Socket FD
-        int epoll_fd;
         int type; //TCP or UDP
         struct addrinfo* dns_results; //Structure for DNS retrieval
         connection_info* info; //CLI arguments
 
     public:
-        ClientSocket(int sock_type, connection_info* parsed_info);
+        ClientSocket(connection_info* parsed_info);
         void create_socket();
         void cleanup();
 
         int get_socket_fd();
-        int get_epoll_fd();
         int get_socket_type();
         struct addrinfo* get_dns_info();
         connection_info* get_arg_info();
