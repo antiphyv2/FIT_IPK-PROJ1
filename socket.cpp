@@ -116,20 +116,14 @@ size_t ClientSocket::accept_msg(TCPMessage* msg){
 }
 
 bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
-        if(info->reply_msg_sent == true){
-           info->msgQ.push(outgoing_msg);
-        } else {
-            if(outgoing_msg.get_msg_type() == JOIN){
-                info->reply_msg_sent = true;
-                return true;
-            } else if(outgoing_msg.get_msg_type() == AUTH){
-                std::cerr << "ERR: Already authorized." << std::endl;
-            } else {
-                return true;
-            }
-        
-        }
-        return false; 
+
+    if(outgoing_msg.get_msg_type() == JOIN){
+        info->reply_msg_sent = true;
+    } else if(outgoing_msg.get_msg_type() == AUTH){
+        std::cerr << "ERR: Already authorized." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 void ClientSocket::start_tcp_chat(){
@@ -176,33 +170,19 @@ void ClientSocket::start_tcp_chat(){
                                     inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                     info.client_state = OPEN_STATE;
-                                    while(!info.msgQ.empty()){
-                                        TCPMessage outgoing_msg = info.msgQ.front();
-                                        if(validate_msg_open(&info, outgoing_msg)){
-                                            send_msg(info.msgQ.front());
-                                        }
-                                        info.msgQ.pop();
-                                    } 
                                 }
 
                             } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                                if(info.reply_msg_sent){
-                                    inbound_msg.print_message();
-                                    info.reply_msg_sent = false;
-                                    while(!info.msgQ.empty()){
-                                        TCPMessage outgoing_msg = info.msgQ.front();
-                                        if(validate_msg_open(&info, outgoing_msg)){
-                                            send_msg(info.msgQ.front());
-                                        }
-                                        info.msgQ.pop();
-                                    } 
-                                }
+                                    if(info.reply_msg_sent){
+                                        inbound_msg.print_message();
+                                        info.reply_msg_sent = false;
+                                    }
                             } else if(inbound_msg.get_msg_type() == ERR){
-                                TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.proces_outgoing_msg();
-                                send_msg(bye_msg);
-                                cleanup();
-                                exit(EXIT_SUCCESS);
+                                    TCPMessage bye_msg("BYE", BYE);
+                                    bye_msg.proces_outgoing_msg();
+                                    send_msg(bye_msg);
+                                    cleanup();
+                                    exit(EXIT_SUCCESS);
                             }
                         } else if(info.client_state == OPEN_STATE){
                             if(inbound_msg.get_msg_type() == ERR){
@@ -224,13 +204,6 @@ void ClientSocket::start_tcp_chat(){
                                     if(info.reply_msg_sent){
                                         inbound_msg.print_message();
                                         info.reply_msg_sent = false;
-                                        while(!info.msgQ.empty()){
-                                            TCPMessage outgoing_msg = info.msgQ.front();
-                                            if(validate_msg_open(&info, outgoing_msg)){
-                                                send_msg(info.msgQ.front());
-                                            }
-                                            info.msgQ.pop();
-                                        }
                                     }
 
                             } else if(inbound_msg.get_msg_type() == MSG){
@@ -248,16 +221,11 @@ void ClientSocket::start_tcp_chat(){
                             }
                         }
                     } else if (fds[i].fd == STDIN_FILENO) {
+                        if(info.reply_msg_sent){
+                            continue;
+                        }
                         std::string message;
                         if(!std::getline(std::cin, message)){
-                            //pridat do fronty a zacit vyprazdnovat, kdyz prazdna ->konec
-                            // while(!info.msgQ.empty()){
-                            //     TCPMessage outgoing_msg = info.msgQ.front();
-                            //     if(validate_msg_open(&info, outgoing_msg)){
-                            //         send_msg(info.msgQ.front());
-                            //     }
-                            //     info.msgQ.pop();
-                            // }
                             TCPMessage bye_msg("BYE", BYE);
                             bye_msg.proces_outgoing_msg();
                             send_msg(bye_msg);
@@ -290,8 +258,6 @@ void ClientSocket::start_tcp_chat(){
                             } else if(info.client_state == AUTH_STATE){
                                 if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent){
                                     std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
-                                } else if (info.reply_msg_sent){
-                                        info.msgQ.push(outgoing_msg);
                                 } else if (outgoing_msg.get_msg_type() == AUTH){
                                         info.reply_msg_sent = true;
                                         send_msg(outgoing_msg);

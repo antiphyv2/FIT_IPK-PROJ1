@@ -8,7 +8,7 @@
 typedef struct CL_INFO{
     std::string dname; //User display name
     fsm_states client_state = START_STATE; //Current mat state
-    std::queue<TCPMessage> msgQ; //MSG queue for storing messages until processing is enabed
+    //std::queue<TCPMessage> msgQ; //MSG queue for storing messages until processing is enabed
     bool reply_msg_sent = false; //Message will require REPLY from server
 } client_info;
 
