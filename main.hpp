@@ -32,4 +32,5 @@ class Signal_handler{
         static void graceful_exit(int signal);
 };
 
+void error_exit_program();
 #endif

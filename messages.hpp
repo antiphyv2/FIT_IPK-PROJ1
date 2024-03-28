@@ -7,6 +7,7 @@
 #include <cstring>
 #include <regex>
 
+#define BUFFER_SIZE 1500
 typedef enum {
     AUTH,
     JOIN,
@@ -28,7 +29,7 @@ class NetworkMessage{
         bool ready_to_send;
         std::string display_name;
         std::string message;
-        char buffer[1500];
+        char buffer[BUFFER_SIZE];
         
         NetworkMessage(std::string input_msg, msg_types msg_type);
 
