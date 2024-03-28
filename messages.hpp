@@ -61,5 +61,6 @@ class TCPMessage : public NetworkMessage{
         bool validate_msg_param(std::string parameter, std::string pattern);
         void add_to_buffer(std::string msg_part) override;
         void add_line_ending();
+        void remove_line_ending(std::string& message);
 };
 #endif

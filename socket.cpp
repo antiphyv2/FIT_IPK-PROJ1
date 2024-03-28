@@ -97,7 +97,7 @@ size_t ClientSocket::accept_msg(TCPMessage* msg){
     char* buffer = msg->get_buffer();
     size_t rx_total = 0;
 
-    while(!r_n_found){
+    while(!r_n_found || rx_total >= 1440){
         bytes_rx = recv(socket_fd, buffer + rx_total, 1, 0);
         if (bytes_rx <= 0){
             std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;

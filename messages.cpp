@@ -9,7 +9,7 @@ bool NetworkMessage::is_ready_to_send(){
 }
 
 void NetworkMessage::print_message(){
-    std::cout << message;
+    std::cout << message << std::endl;
 }
 
 std::string NetworkMessage::get_display_name(){
@@ -58,6 +58,15 @@ void TCPMessage::add_line_ending(){
     buffer[length] = '\r';
     buffer[length + 1] = '\n';
     buffer[length + 2] = '\0';
+}
+
+void TCPMessage::remove_line_ending(std::string& message){
+    if(!message.empty() && message.back() == '\n'){
+        message.pop_back();
+    }
+    if(!message.empty() && message.back() == '\r'){
+        message.pop_back();
+    }
 }
 
 void TCPMessage::process_outgoing_msg(){
@@ -230,6 +239,7 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                         return;
                     }
                     std::string reply_msg = "Success: ";
+                    remove_line_ending(message_to_extract);
                     reply_msg.append(message_to_extract);
                     message = reply_msg;
                     return;
@@ -246,13 +256,24 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                         return;
                     }
                     std::string reply_msg = "Failure: ";
+                    remove_line_ending(message_to_extract);
                     reply_msg.append(message_to_extract);
                     message = reply_msg;
                     return;
                 }
             } else if(msg_vector[0] == "ERR"){
                 type = ERR;
-                std::cerr << "ERR FROM " << msg_vector[2] << ": " << msg_vector[4] << std::endl;
+
+                std::regex pattern("is", std::regex_constants::icase);
+                std::smatch match_regex;
+                if (std::regex_search(help_string, match_regex, pattern)) {
+                    message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
+                } else {
+                    std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+                    return;
+                }
+                remove_line_ending(message_to_extract);
+                std::cerr << "ERR FROM " << msg_vector[2] << ": " << message_to_extract << std::endl;
                 return;
             } else if(msg_vector[0] == "MSG"){
                 type = MSG;
@@ -265,8 +286,8 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                     std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                     return;
                 }
-
-                std::cout << msg_vector[2] << ": " << message_to_extract; //<< std::endl;
+                remove_line_ending(message_to_extract);
+                std::cout << msg_vector[2] << ": " << message_to_extract << std::endl;
                 return;
             }
         } 
