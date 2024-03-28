@@ -3,6 +3,7 @@
 
 #include "main.hpp"
 #include "messages.hpp"
+#include "arg_parser.hpp"
 
 
 typedef struct CL_INFO{
@@ -37,5 +38,6 @@ class ClientSocket{
         size_t accept_msg(TCPMessage* msg);
         void print_args();
         void start_tcp_chat();
+        void send_bye_and_exit();
 };
 #endif

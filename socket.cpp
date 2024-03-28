@@ -91,6 +91,14 @@ void ClientSocket::send_msg(TCPMessage msg){
     }
 }
 
+void ClientSocket::send_bye_and_exit(){
+    TCPMessage bye_msg("BYE", BYE);
+    bye_msg.process_outgoing_msg();
+    send_msg(bye_msg);
+    cleanup();
+    exit(EXIT_SUCCESS);
+}
+
 size_t ClientSocket::accept_msg(TCPMessage* msg){
     size_t bytes_rx;
     bool r_n_found = false;
@@ -157,11 +165,7 @@ void ClientSocket::start_tcp_chat(){
                         
                         if(info.client_state == START_STATE){
                             if(inbound_msg.get_msg_type() == ERR){
-                                TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.process_outgoing_msg();
-                                send_msg(bye_msg);
-                                cleanup();
-                                exit(EXIT_SUCCESS);
+                                send_bye_and_exit();
                             }
                     
                         } else if(info.client_state == AUTH_STATE){
@@ -178,19 +182,12 @@ void ClientSocket::start_tcp_chat(){
                                         info.reply_msg_sent = false;
                                     }
                             } else if(inbound_msg.get_msg_type() == ERR){
-                                    TCPMessage bye_msg("BYE", BYE);
-                                    bye_msg.process_outgoing_msg();
-                                    send_msg(bye_msg);
-                                    cleanup();
-                                    exit(EXIT_SUCCESS);
+                                send_bye_and_exit();
                             }
+
                         } else if(info.client_state == OPEN_STATE){
                             if(inbound_msg.get_msg_type() == ERR){
-                                TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.process_outgoing_msg();
-                                send_msg(bye_msg);
-                                cleanup();
-                                exit(EXIT_SUCCESS);
+                                send_bye_and_exit();
                             } else if(inbound_msg.get_msg_type() == BYE){
                                 cleanup();
                                 exit(EXIT_SUCCESS);
@@ -213,11 +210,7 @@ void ClientSocket::start_tcp_chat(){
                                 err_msg.set_display_name(info.dname);
                                 err_msg.process_outgoing_msg();
                                 send_msg(err_msg);
-                                TCPMessage bye_msg("BYE", BYE);
-                                bye_msg.process_outgoing_msg();
-                                send_msg(bye_msg);
-                                cleanup();
-                                exit(EXIT_SUCCESS);
+                                send_bye_and_exit();
                             }
                         }
                     } else if (fds[i].fd == STDIN_FILENO) {
@@ -226,11 +219,7 @@ void ClientSocket::start_tcp_chat(){
                         }
                         std::string message;
                         if(!std::getline(std::cin, message)){
-                            TCPMessage bye_msg("BYE", BYE);
-                            bye_msg.process_outgoing_msg();
-                            send_msg(bye_msg);
-                            cleanup();
-                            exit(EXIT_SUCCESS);
+                            send_bye_and_exit();
                         }
 
                         if(message.empty()){
