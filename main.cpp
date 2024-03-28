@@ -25,9 +25,13 @@ void exit_program(bool send_bye, int ret_state){
 int main(int argc, char* argv[]){
     std::signal(SIGINT, Signal_handler::graceful_exit);
     connection_info* info = CLI_Parser::parse_args(argc, argv);
-    TCPClient* client = new TCPClient(info); 
-    client_ptr = client;
-    client->start_tcp_chat();
-    Signal_handler::graceful_exit(SIGINT);
+    if(info->sock_type == SOCK_STREAM){
+        TCPClient* client = new TCPClient(info); 
+        client_ptr = client;
+        client->start_tcp_chat();
+    } else {
+        
+    }
+    exit_program(false, EXIT_SUCCESS);
     return 0;
 }
