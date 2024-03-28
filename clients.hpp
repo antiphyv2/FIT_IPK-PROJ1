@@ -37,7 +37,6 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
-        void send_bye_and_exit();
         //~TCPClient();
 };
 

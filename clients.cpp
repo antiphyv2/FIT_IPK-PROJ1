@@ -35,7 +35,7 @@ void NetworkClient::dns_lookup(){
     int retreived_info;
     if ((retreived_info = getaddrinfo(conn_info->ip_hostname.c_str(), conn_info->port.c_str(), &hints, &dns_results)) != 0){
         std::cout << "ERR: Could not resolve hostname." << std::endl;
-        error_exit_program();
+        exit_program(false, EXIT_FAILURE);
     }
 }
 
@@ -43,7 +43,7 @@ void NetworkClient::establish_connection(){
     int ret_val;
     if((ret_val = connect(socket->get_socket_fd(), dns_results->ai_addr, dns_results->ai_addrlen)) != 0){
         std::cout << "ERR: Could not connect to the server." << std::endl;
-        error_exit_program();
+        exit_program(false, EXIT_FAILURE);
     }
 }
 
@@ -52,13 +52,6 @@ void NetworkClient::send_msg(NetworkMessage& msg){
     if (bytes_sent == -1) {
         std::cerr << "ERR: Message could not be send to server." << std::endl;
     }
-}
-
-void TCPClient::send_bye_and_exit(){
-    TCPMessage bye_msg("BYE", BYE);
-    bye_msg.process_outgoing_msg();
-    send_msg(bye_msg);
-    error_exit_program();
 }
 
 size_t NetworkClient::accept_msg(NetworkMessage* msg){
@@ -71,7 +64,7 @@ size_t NetworkClient::accept_msg(NetworkMessage* msg){
         bytes_rx = recv(socket->get_socket_fd(), buffer + rx_total, 1, 0);
         if (bytes_rx <= 0){
             std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
-            error_exit_program();
+            exit_program(false, EXIT_FAILURE);
         }
         rx_total += 1;
         for(size_t i = 0; i < rx_total - 1; i++){
@@ -112,7 +105,7 @@ void TCPClient::start_tcp_chat(){
         int event_num = poll(fds, 2, -1);
         if (event_num == -1) {
             std::cerr << "ERR: POLL." << std::endl;
-            error_exit_program();
+            exit_program(false, EXIT_FAILURE);
         }
         for (int i = 0; i < 2; i++) {
             if (fds[i].revents & POLLIN) {
@@ -123,7 +116,7 @@ void TCPClient::start_tcp_chat(){
                     
                     if(info.client_state == START_STATE){
                         if(inbound_msg.get_msg_type() == ERR){
-                            send_bye_and_exit();
+                            exit_program(true, EXIT_FAILURE);
                         }
                 
                     } else if(info.client_state == AUTH_STATE){
@@ -139,15 +132,15 @@ void TCPClient::start_tcp_chat(){
                                     inbound_msg.print_message();
                                     info.reply_msg_sent = false;
                                 }
-                        } else if(inbound_msg.get_msg_type() == ERR){
-                            send_bye_and_exit();
+                        } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE){
+                            exit_program(true, EXIT_FAILURE);
                         }
 
                     } else if(info.client_state == OPEN_STATE){
                         if(inbound_msg.get_msg_type() == ERR){
-                            send_bye_and_exit();
+                            exit_program(true, EXIT_FAILURE);
                         } else if(inbound_msg.get_msg_type() == BYE){
-                            error_exit_program();
+                            exit_program(false, EXIT_SUCCESS);
                         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                             if(info.reply_msg_sent){
                                 inbound_msg.print_message();
@@ -167,7 +160,7 @@ void TCPClient::start_tcp_chat(){
                             err_msg.set_display_name(info.dname);
                             err_msg.process_outgoing_msg();
                             send_msg(err_msg);
-                            send_bye_and_exit();
+                            exit_program(true, EXIT_FAILURE);
                         }
                     }
                 } else if (fds[i].fd == STDIN_FILENO) {
@@ -176,7 +169,7 @@ void TCPClient::start_tcp_chat(){
                     }
                     std::string message;
                     if(!std::getline(std::cin, message)){
-                        send_bye_and_exit();
+                        exit_program(true, EXIT_FAILURE);
                     }
 
                     if(message.empty()){

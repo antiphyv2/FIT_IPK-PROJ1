@@ -8,17 +8,18 @@ NetworkClient* client_ptr;
 
 void Signal_handler::graceful_exit(int signal){
     if(signal == SIGINT){
+        exit_program(false, EXIT_SUCCESS);
+    }
+}
+
+void exit_program(bool send_bye, int ret_state){
+    if(send_bye){
         TCPMessage bye_msg("BYE", BYE);
         bye_msg.process_outgoing_msg();
         client_ptr->send_msg(bye_msg);
-        delete client_ptr;
     }
-    exit(EXIT_SUCCESS);
-}
-
-void error_exit_program(){
     delete client_ptr;
-    exit(EXIT_FAILURE);
+    exit(ret_state);
 }
 
 int main(int argc, char* argv[]){
