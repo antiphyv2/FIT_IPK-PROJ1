@@ -46,7 +46,6 @@ class NetworkMessage{
     public:
         virtual void process_outgoing_msg() = 0;
         virtual void process_inbound_msg(size_t bytes_rx) = 0;
-        virtual void add_to_buffer(std::string msg_part) = 0;
         bool is_ready_to_send();
         void print_message();
         char* get_buffer();
@@ -71,7 +70,7 @@ class TCPMessage : public NetworkMessage{
 
         void process_outgoing_msg() override;
         void process_inbound_msg(size_t bytes_rx) override;
-        void add_to_buffer(std::string msg_part) override;
+        void add_to_buffer(std::string msg_part);
         void add_line_ending();
         void remove_line_ending(std::string& message);
 };
@@ -80,11 +79,11 @@ class UDPMessage : public NetworkMessage{
 
     private:
         bool waiting_for_confirm;
+        std::vector<uint8_t> udp_message;
         uint16_t message_id;
     public:
         UDPMessage(std::string input_msg, msg_types msg_type, uint16_t msg_id) : NetworkMessage(input_msg, msg_type), message_id(msg_id){}
         void process_outgoing_msg() override;
         void process_inbound_msg(size_t bytes_rx) override;
-        void add_to_buffer(std::string msg_part) override;
 };
 #endif

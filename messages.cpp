@@ -213,23 +213,77 @@ void TCPMessage::process_outgoing_msg(){
 }
 
 void UDPMessage::process_outgoing_msg(){
-    if(type == BYE){
-        buffer[0] = UDP_BYE;
-        memcpy(&buffer[1], &message_id, sizeof(message_id));
-       std::cout << "Buffer first 3 bytes in hex: ";
-        for (int i = 0; i < 3; ++i) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') 
-                  << static_cast<unsigned>(static_cast<unsigned char>(buffer[i])) << " ";
+
+    std::vector<std::string> msg_parts;
+    check_user_message(msg_parts);
+
+    if(type == AUTH){
+        udp_message.push_back(UDP_AUTH);
+        udp_message.push_back(message_id >> 8);
+        udp_message.push_back(message_id & 0xFF);
+        for (char c : msg_parts.front()){
+            udp_message.push_back(static_cast<uint8_t>(c));
         }
-        std::cout << std::dec << std::endl;
+        msg_parts.erase(msg_parts.begin());
+        udp_message.push_back('\0');
+        for (char c : msg_parts.front()){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        msg_parts.erase(msg_parts.begin());
+        udp_message.push_back('\0');
+        for (char c : msg_parts.front()){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+    } else if(type == JOIN){
+        udp_message.push_back(UDP_JOIN);
+        udp_message.push_back(message_id >> 8);
+        udp_message.push_back(message_id & 0xFF);
+        for (char c : msg_parts.back()){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+        for (char c : display_name){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+    } else if(type == MSG || type == ERR){
+        if(type == ERR){
+            udp_message.push_back(UDP_ERR);
+        } else {
+            udp_message.push_back(UDP_MSG);
+        }
+        udp_message.push_back(message_id >> 8);
+        udp_message.push_back(message_id & 0xFF);
+        for (char c : display_name){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+        for (char c : message){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+
+    } else if(type == BYE){
+        udp_message.push_back(UDP_BYE);
+        udp_message.push_back(message_id >> 8);
+        udp_message.push_back(message_id & 0xFF);
+        for (char c : display_name){
+            udp_message.push_back(static_cast<uint8_t>(c));
+        }
+        udp_message.push_back('\0');
+    } else {
+        return;
     }
+
+    for (auto byte : udp_message) {
+    std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
+    }
+    std::cout << std::dec << std::endl; 
+    
 }
 
 void UDPMessage::process_inbound_msg(size_t bytes_rx){
-    std::cout << message;
-}
-
-void UDPMessage::add_to_buffer(std::string msg_part){
     std::cout << message;
 }
 

@@ -32,8 +32,15 @@ int main(int argc, char* argv[]){
     } else {
         UDPClient* client = new UDPClient(info);
         client_ptr = client;
-        UDPMessage msg_udp("BYE", BYE, 1);
+        UDPMessage msg_udp("/join discord", USER_CMD, 53213);
+        msg_udp.set_display_name("MAREK");
         msg_udp.process_outgoing_msg();
+        UDPMessage msg_udp2("ahoj kamaradi", USER_CMD, 51213);
+        msg_udp2.set_display_name("DAVID");
+        msg_udp2.process_outgoing_msg();
+        UDPMessage msg_udp3("to je konec", ERR, 81);
+        msg_udp3.set_display_name("HONZA");
+        msg_udp3.process_outgoing_msg();
     }
     exit_program(false, EXIT_SUCCESS);
     return 0;
