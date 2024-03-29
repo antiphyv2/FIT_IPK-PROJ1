@@ -20,14 +20,14 @@ class NetworkClient{
         
         NetworkClient(connection_info* info);
     public:
+        //virtual void send_msg(NetworkMessage& msg) = 0;
         connection_info* get_arg_info();
         ClientSocket* get_socket();
         void dns_lookup();
         void establish_connection();
-        void send_msg(NetworkMessage& msg);
-        size_t accept_msg(NetworkMessage* msg);
+        //size_t accept_msg(NetworkMessage* msg);
         struct addrinfo* get_dns_info();
-        ~NetworkClient();
+        virtual ~NetworkClient();
     
 };
 
@@ -36,12 +36,17 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
+        void send_msg(TCPMessage& msg);
+        size_t accept_msg(TCPMessage& msg);
+        ~TCPClient();
 };
 
 class UDPClient : public NetworkClient{
 
     public:
         UDPClient(connection_info* info) : NetworkClient(info){}
+        void send_msg(UDPMessage& msg);
+        ~UDPClient();
 };
 
 

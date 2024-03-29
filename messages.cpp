@@ -32,11 +32,11 @@ void NetworkMessage::set_msg_type(msg_types msg_type){
     type = msg_type;
 }
 
-char* NetworkMessage::get_buffer(){
+char* TCPMessage::get_buffer(){
     return buffer;
 }
 
-size_t NetworkMessage::get_buffer_size(){
+size_t TCPMessage::get_buffer_size(){
     return std::strlen(buffer);
 }
 
@@ -218,73 +218,82 @@ void UDPMessage::process_outgoing_msg(){
     check_user_message(msg_parts);
 
     if(type == AUTH){
-        udp_message.push_back(UDP_AUTH);
-        udp_message.push_back(message_id >> 8);
-        udp_message.push_back(message_id & 0xFF);
+        udp_buffer.push_back(UDP_AUTH);
+        udp_buffer.push_back(message_id >> 8);
+        udp_buffer.push_back(message_id & 0xFF);
         for (char c : msg_parts.front()){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
         msg_parts.erase(msg_parts.begin());
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
         for (char c : msg_parts.front()){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
         msg_parts.erase(msg_parts.begin());
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
         for (char c : msg_parts.front()){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
     } else if(type == JOIN){
-        udp_message.push_back(UDP_JOIN);
-        udp_message.push_back(message_id >> 8);
-        udp_message.push_back(message_id & 0xFF);
+        udp_buffer.push_back(UDP_JOIN);
+        udp_buffer.push_back(message_id >> 8);
+        udp_buffer.push_back(message_id & 0xFF);
         for (char c : msg_parts.back()){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
         for (char c : display_name){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
     } else if(type == MSG || type == ERR){
         if(type == ERR){
-            udp_message.push_back(UDP_ERR);
+            udp_buffer.push_back(UDP_ERR);
         } else {
-            udp_message.push_back(UDP_MSG);
+            udp_buffer.push_back(UDP_MSG);
         }
-        udp_message.push_back(message_id >> 8);
-        udp_message.push_back(message_id & 0xFF);
+        udp_buffer.push_back(message_id >> 8);
+        udp_buffer.push_back(message_id & 0xFF);
         for (char c : display_name){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
         for (char c : message){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
 
     } else if(type == BYE){
-        udp_message.push_back(UDP_BYE);
-        udp_message.push_back(message_id >> 8);
-        udp_message.push_back(message_id & 0xFF);
+        udp_buffer.push_back(UDP_BYE);
+        udp_buffer.push_back(message_id >> 8);
+        udp_buffer.push_back(message_id & 0xFF);
         for (char c : display_name){
-            udp_message.push_back(static_cast<uint8_t>(c));
+            udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_message.push_back('\0');
+        udp_buffer.push_back('\0');
     } else {
         return;
     }
 
-    for (auto byte : udp_message) {
+    for (auto byte : udp_buffer) {
     std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
     }
     std::cout << std::dec << std::endl; 
     
 }
 
+uint8_t* UDPMessage::get_buffer(){
+    return udp_buffer.data();
+}
+
+size_t UDPMessage::get_buffer_size(){
+    return udp_buffer.size();
+}
+
+
 void UDPMessage::process_inbound_msg(size_t bytes_rx){
-    std::cout << message;
+    std::cout << bytes_rx;
 }
 
 void TCPMessage::process_inbound_msg(size_t bytes_rx){
