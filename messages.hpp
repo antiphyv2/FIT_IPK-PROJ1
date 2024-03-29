@@ -58,7 +58,7 @@ class NetworkMessage{
         msg_types get_msg_type();
         void set_msg_type(msg_types msg_type);
         bool validate_msg_param(std::string parameter, std::string pattern);
-        msg_types check_user_message();
+        void check_user_message(std::vector<std::string>& message_parts);
 
         //NetworkMessage(std::string input_msg, msg_types msg_type);
         virtual ~NetworkMessage() {}
