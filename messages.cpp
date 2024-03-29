@@ -32,7 +32,7 @@ void NetworkMessage::set_msg_type(msg_types msg_type){
     type = msg_type;
 }
 
-char* TCPMessage::get_buffer(){
+void* TCPMessage::get_buffer(){
     return buffer;
 }
 
@@ -283,7 +283,7 @@ void UDPMessage::process_outgoing_msg(){
     
 }
 
-uint8_t* UDPMessage::get_buffer(){
+void* UDPMessage::get_buffer(){
     return udp_buffer.data();
 }
 

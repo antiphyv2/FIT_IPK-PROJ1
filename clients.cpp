@@ -60,24 +60,17 @@ void NetworkClient::establish_connection(){
     }
 }
 
-void TCPClient::send_msg(TCPMessage& msg){
+void NetworkClient::send_msg(NetworkMessage& msg){
     ssize_t bytes_sent = send(socket->get_socket_fd(), msg.get_buffer(), msg.get_buffer_size(), 0);
     if (bytes_sent == -1) {
         std::cerr << "ERR: Message could not be send to server." << std::endl;
     }
 }
 
-void UDPClient::send_msg(UDPMessage& msg){
-    ssize_t bytes_sent = send(socket->get_socket_fd(), msg.get_buffer(), msg.get_buffer_size() , 0);
-    if (bytes_sent == -1) {
-        std::cerr << "ERR: Message could not be send to server." << std::endl;
-    }
-}
-
-size_t TCPClient::accept_msg(TCPMessage& msg){
+size_t TCPClient::accept_msg(NetworkMessage& msg){
     size_t bytes_rx;
     bool r_n_found = false;
-    char* buffer = msg.get_buffer();
+    char* buffer = (char*) msg.get_buffer();
     size_t rx_total = 0;
 
     while(!r_n_found || rx_total >= BUFFER_SIZE - 1){

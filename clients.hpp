@@ -20,7 +20,8 @@ class NetworkClient{
         
         NetworkClient(connection_info* info);
     public:
-        //virtual void send_msg(NetworkMessage& msg) = 0;
+        virtual size_t accept_msg(NetworkMessage& msg) = 0;
+        void send_msg(NetworkMessage& msg);
         connection_info* get_arg_info();
         ClientSocket* get_socket();
         void dns_lookup();
@@ -36,8 +37,7 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
-        void send_msg(TCPMessage& msg);
-        size_t accept_msg(TCPMessage& msg);
+        size_t accept_msg(NetworkMessage& msg) override;
         ~TCPClient();
 };
 
@@ -45,7 +45,6 @@ class UDPClient : public NetworkClient{
 
     public:
         UDPClient(connection_info* info) : NetworkClient(info){}
-        void send_msg(UDPMessage& msg);
         ~UDPClient();
 };
 

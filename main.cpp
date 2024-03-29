@@ -14,13 +14,9 @@ void Signal_handler::graceful_exit(int signal){
 
 void exit_program(bool send_bye, int ret_state){
     if(send_bye && client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){
-
-        if(client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){
-            TCPMessage bye_msg("BYE", BYE);
-            bye_msg.process_outgoing_msg();
-            TCPClient* ptr = (TCPClient*) client_ptr;
-            ptr->send_msg(bye_msg);
-        }
+        TCPMessage bye_msg("BYE", BYE);
+        bye_msg.process_outgoing_msg();
+        client_ptr->send_msg(bye_msg);
     }
     delete client_ptr;
     exit(ret_state);
