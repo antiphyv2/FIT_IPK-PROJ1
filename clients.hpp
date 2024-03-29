@@ -4,6 +4,7 @@
 #include "main.hpp"
 #include "socket.hpp"
 
+
 typedef struct CL_INFO{
     std::string dname; //User display name
     fsm_states client_state = START_STATE; //Current mat state
@@ -13,9 +14,9 @@ typedef struct CL_INFO{
 class NetworkClient{
 
     protected:
-        connection_info* conn_info;
-        client_info cl_info;
-        ClientSocket* socket;
+        connection_info* conn_info; //Structure with connection info retreived from CLI
+        client_info cl_info; //Structure with current client information
+        ClientSocket* socket; //Socket object
         struct addrinfo* dns_results; //Structure for DNS retrieval
         
         NetworkClient(connection_info* info);
@@ -26,7 +27,6 @@ class NetworkClient{
         ClientSocket* get_socket();
         void dns_lookup();
         void establish_connection();
-        //size_t accept_msg(NetworkMessage* msg);
         struct addrinfo* get_dns_info();
         virtual ~NetworkClient();
     
@@ -45,6 +45,7 @@ class UDPClient : public NetworkClient{
 
     public:
         UDPClient(connection_info* info) : NetworkClient(info){}
+        size_t accept_msg(NetworkMessage& msg) override;
         ~UDPClient();
 };
 

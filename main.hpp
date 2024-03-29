@@ -32,5 +32,11 @@ class Signal_handler{
         static void graceful_exit(int signal);
 };
 
+/**
+ * @brief Function that handles program exit
+ * 
+ * @param send_bye flag if bye will be send to server
+ * @param ret_state return SUCCESS or FAILURE
+ */
 void exit_program(bool send_bye, int ret_state);
 #endif

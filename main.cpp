@@ -30,11 +30,15 @@ int main(int argc, char* argv[]){
         client_ptr = client;
         client->start_tcp_chat();
     } else {
-        // UDPClient* client = new UDPClient(info);
-        // client_ptr = client;
-        // UDPMessage msg_udp("/join discord", USER_CMD, 53213);
-        // msg_udp.set_display_name("MAREK");
-        // msg_udp.process_outgoing_msg();
+        UDPClient* client = new UDPClient(info);
+        client_ptr = client;
+        UDPMessage msg_udp("/join discord", USER_CMD, 53213);
+        msg_udp.set_display_name("MAREK");
+        msg_udp.process_outgoing_msg();
+        client->get_socket()->create_socket();
+        client->dns_lookup();
+        client->establish_connection();
+        client->send_msg(msg_udp);
         // UDPMessage msg_udp2("ahoj kamaradi", USER_CMD, 51213);
         // msg_udp2.set_display_name("DAVID");
         // msg_udp2.process_outgoing_msg();

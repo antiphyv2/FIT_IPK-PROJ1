@@ -90,6 +90,10 @@ size_t TCPClient::accept_msg(NetworkMessage& msg){
     return rx_total;
 }
 
+size_t UDPClient::accept_msg(NetworkMessage& msg){
+    return msg.get_buffer_size();
+}
+
 bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
 
     if(outgoing_msg.get_msg_type() == JOIN){
