@@ -4,6 +4,10 @@ NetworkClient::NetworkClient(connection_info* info) : conn_info(info), socket(ne
 
 NetworkClient::~NetworkClient(){}
 
+UDPClient::UDPClient(connection_info* info) : NetworkClient(info){
+    memset(&server_addr, 0, sizeof(server_addr));
+}
+
 TCPClient::~TCPClient(){
     delete socket;
     if(conn_info != nullptr){
@@ -96,7 +100,8 @@ size_t TCPClient::accept_msg(NetworkMessage& msg){
 
 size_t UDPClient::accept_msg(NetworkMessage& msg){
     size_t bytes_rx;
-    bytes_rx = recv(socket->get_socket_fd(), msg.get_input_buffer(), BUFFER_SIZE, 0);
+    socklen_t addr_len = sizeof(server_addr);
+    bytes_rx = recvfrom(socket->get_socket_fd(), msg.get_input_buffer(), BUFFER_SIZE, 0, (struct sockaddr*) &server_addr, &addr_len);
     if (bytes_rx <= 0){
       std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
       exit_program(false, EXIT_FAILURE);
@@ -197,9 +202,6 @@ void TCPClient::start_tcp_chat(){
         }
 
         if(fds[1].revents & (POLLIN | POLLHUP)){
-            // if(info.reply_msg_sent){
-            //     continue;
-            // }
             std::string message;
             if(!std::getline(std::cin, message)){
                 exit_program(true, EXIT_FAILURE);
@@ -244,4 +246,24 @@ void TCPClient::start_tcp_chat(){
             }   
         }    
     }
+}
+
+void UDPClient::start_udp_chat(){
+    socket->create_socket();
+    dns_lookup();
+    establish_connection();
+
+
+    UDPMessage* msg_udp = new UDPMessage("/join discord", USER_CMD, 53213);
+    msg_udp->set_display_name("MAREK");
+    msg_udp->process_outgoing_msg();
+    send_msg(*msg_udp);
+    delete msg_udp;
+    UDPMessage udp_recv("", TO_BE_DECIDED, 19122);
+    size_t bytes_rx = accept_msg(udp_recv);
+    udp_recv.process_inbound_msg(bytes_rx);
+    std::cout << std::endl << "INCOMING MSG: ";
+    udp_recv.print_message();
+    std:: cout << "MSG TYPE:" << udp_recv.get_msg_type();
+    std::cout << std::endl << "MSG ID: " << udp_recv.get_msg_id() << std::endl;
 }

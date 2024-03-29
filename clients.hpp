@@ -43,9 +43,12 @@ class TCPClient : public NetworkClient{
 };
 
 class UDPClient : public NetworkClient{
-
+    private:
+        struct sockaddr_in server_addr;
     public:
-        UDPClient(connection_info* info) : NetworkClient(info){}
+        UDPClient(connection_info* info);
+        void start_udp_chat();
+
         size_t accept_msg(NetworkMessage& msg) override;
         ~UDPClient();
 };

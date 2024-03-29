@@ -32,22 +32,7 @@ int main(int argc, char* argv[]){
     } else {
         UDPClient* client = new UDPClient(info);
         client_ptr = client;
-        UDPMessage* msg_udp = new UDPMessage("/join discord", USER_CMD, 53213);
-        msg_udp->set_display_name("MAREK");
-        msg_udp->process_outgoing_msg();
-        // msg_udp->clear_output_buffer();
-        client->get_socket()->create_socket();
-        client->dns_lookup();
-        client->establish_connection();
-        client->send_msg(*msg_udp);
-        delete msg_udp;
-        UDPMessage udp_recv("", TO_BE_DECIDED, 19122);
-        size_t bytes_rx = client->accept_msg(udp_recv);
-        udp_recv.process_inbound_msg(bytes_rx);
-        std::cout << std::endl << "INCOMING MSG: ";
-        udp_recv.print_message();
-        std:: cout << "MSG TYPE:" << udp_recv.get_msg_type();
-        std::cout << std::endl << "MSG ID: " << udp_recv.get_msg_id() << std::endl;;
+        client->start_udp_chat();
     }
     exit_program(false, EXIT_SUCCESS);
     return 0;
