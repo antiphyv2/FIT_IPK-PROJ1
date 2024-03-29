@@ -81,21 +81,35 @@ class NetworkMessage{
          * @brief Prints buffer
          * 
          */
-        void print_buffer();
+        void print_input_buffer();
 
         /**
-         * @brief Virtual function to get a pointer for the buffer
+         * @brief Gets a pointer to input buffer where messages will be received
+         * 
+         * @return char* pointer to the buffer
+         */
+        char* get_input_buffer();
+
+        /**
+         * @brief Virtual function to get pointer to output buffer where messages will be store until send 
          * 
          * @return void* pointer to the buffer depending on derived class
          */
-        virtual void* get_buffer() = 0;
+        virtual void* get_output_buffer() = 0;
 
         /**
-         * @brief Virtual function to get buffer size
+         * @brief Function to get input buffer size
          * 
          * @return size_t buffer size
          */
-        virtual size_t get_buffer_size() = 0;
+        size_t get_input_buffer_size();
+
+        /**
+         * @brief Gets output buffer size
+         * 
+         * @return size_t buffer size
+         */
+        virtual size_t get_output_buffer_size() = 0;
 
         /**
          * @brief Gets the display name
@@ -160,8 +174,8 @@ class TCPMessage : public NetworkMessage{
          * @param msg_part to be added to buffer
          */
         void add_to_buffer(std::string msg_part);
-        void* get_buffer();
-        size_t get_buffer_size();
+        void* get_output_buffer() override;
+        size_t get_output_buffer_size() override;
         void add_line_ending();
         /**
          * @brief Removes \r\n from TCP message
@@ -177,11 +191,26 @@ class UDPMessage : public NetworkMessage{
         bool waiting_for_confirm;
         std::vector<uint8_t> udp_buffer;
         uint16_t message_id;
+        uint16_t ref_message_id;
     public:
         UDPMessage(std::string input_msg, msg_types msg_type, uint16_t msg_id) : NetworkMessage(input_msg, msg_type), message_id(msg_id){}
         void process_outgoing_msg() override;
         void process_inbound_msg(size_t bytes_rx) override;
         void* get_buffer();
-        size_t get_buffer_size();
+        void* get_output_buffer() override;
+        size_t get_output_buffer_size() override;
+
+        /**
+         * @brief Clears output buffer
+         * 
+         */
+        void clear_output_buffer();
+
+        /**
+         * @brief Gets UDP msg id
+         * 
+         * @return uint16_t message id
+         */
+        uint16_t get_msg_id();
 };
 #endif

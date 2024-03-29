@@ -13,7 +13,7 @@ void Signal_handler::graceful_exit(int signal){
 }
 
 void exit_program(bool send_bye, int ret_state){
-    if(send_bye && client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){
+    if(send_bye && client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){ //&& client_ptr->get_cl_info()->client_state != START_STATE){
         TCPMessage bye_msg("BYE", BYE);
         bye_msg.process_outgoing_msg();
         client_ptr->send_msg(bye_msg);
@@ -32,19 +32,22 @@ int main(int argc, char* argv[]){
     } else {
         UDPClient* client = new UDPClient(info);
         client_ptr = client;
-        UDPMessage msg_udp("/join discord", USER_CMD, 53213);
-        msg_udp.set_display_name("MAREK");
-        msg_udp.process_outgoing_msg();
+        UDPMessage* msg_udp = new UDPMessage("/join discord", USER_CMD, 53213);
+        msg_udp->set_display_name("MAREK");
+        msg_udp->process_outgoing_msg();
+        // msg_udp->clear_output_buffer();
         client->get_socket()->create_socket();
         client->dns_lookup();
         client->establish_connection();
-        client->send_msg(msg_udp);
-        // UDPMessage msg_udp2("ahoj kamaradi", USER_CMD, 51213);
-        // msg_udp2.set_display_name("DAVID");
-        // msg_udp2.process_outgoing_msg();
-        // UDPMessage msg_udp3("to je konec", ERR, 81);
-        // msg_udp3.set_display_name("HONZA");
-        // msg_udp3.process_outgoing_msg();
+        client->send_msg(*msg_udp);
+        delete msg_udp;
+        UDPMessage udp_recv("", TO_BE_DECIDED, 19122);
+        size_t bytes_rx = client->accept_msg(udp_recv);
+        udp_recv.process_inbound_msg(bytes_rx);
+        std::cout << std::endl << "INCOMING MSG: ";
+        udp_recv.print_message();
+        std:: cout << "MSG TYPE:" << udp_recv.get_msg_type();
+        std::cout << std::endl << "MSG ID: " << udp_recv.get_msg_id() << std::endl;;
     }
     exit_program(false, EXIT_SUCCESS);
     return 0;

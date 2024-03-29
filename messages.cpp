@@ -32,20 +32,44 @@ void NetworkMessage::set_msg_type(msg_types msg_type){
     type = msg_type;
 }
 
-void* TCPMessage::get_buffer(){
+char* NetworkMessage::get_input_buffer(){
     return buffer;
 }
 
-size_t TCPMessage::get_buffer_size(){
+size_t NetworkMessage::get_input_buffer_size(){
     return std::strlen(buffer);
 }
 
-void NetworkMessage::print_buffer(){
+void* TCPMessage::get_output_buffer(){
+    return buffer;
+}
+
+size_t TCPMessage::get_output_buffer_size(){
+    return std::strlen(buffer);
+}
+
+void* UDPMessage::get_output_buffer(){
+    return udp_buffer.data();
+}
+
+size_t UDPMessage::get_output_buffer_size(){
+    return udp_buffer.size();
+}
+
+void UDPMessage::clear_output_buffer(){
+    udp_buffer.clear();
+}
+
+void NetworkMessage::print_input_buffer(){
     std::cout << buffer;
 }
 
 void NetworkMessage::clear_buffer(){
     memset(buffer, 0, sizeof(buffer));
+}
+
+uint16_t UDPMessage::get_msg_id(){
+    return message_id;
 }
 
 void NetworkMessage::check_user_message(std::vector<std::string>& message_parts){
@@ -234,6 +258,7 @@ void UDPMessage::process_outgoing_msg(){
         for (char c : msg_parts.front()){
             udp_buffer.push_back(static_cast<uint8_t>(c));
         }
+        msg_parts.erase(msg_parts.begin());
         udp_buffer.push_back('\0');
     } else if(type == JOIN){
         udp_buffer.push_back(UDP_JOIN);
@@ -271,7 +296,7 @@ void UDPMessage::process_outgoing_msg(){
         for (char c : display_name){
             udp_buffer.push_back(static_cast<uint8_t>(c));
         }
-        udp_buffer.push_back('\0');
+        //udp_buffer.push_back('\0');
     } else {
         return;
     }
@@ -280,20 +305,80 @@ void UDPMessage::process_outgoing_msg(){
     std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
     }
     std::cout << std::dec << std::endl; 
-    
 }
-
-void* UDPMessage::get_buffer(){
-    return udp_buffer.data();
-}
-
-size_t UDPMessage::get_buffer_size(){
-    return udp_buffer.size();
-}
-
 
 void UDPMessage::process_inbound_msg(size_t bytes_rx){
-    std::cout << bytes_rx;
+    if(bytes_rx < 3){
+        type = ERR;
+        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+        return;
+    }
+    uint8_t type_to_compare = buffer[0];
+    memcpy(&message_id, buffer + 1, sizeof(message_id));
+
+    if(type_to_compare == UDP_CONFIRM){
+        type = CONFIRM;
+    } else if(type_to_compare == UDP_REPLY){
+        if(bytes_rx < 8){
+            type = ERR;
+            std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+            return;
+        }
+        if(buffer[3] == 0){
+            type = REPLY_NOK;
+        } else {
+            type = REPLY_OK;
+        }
+        memcpy(&ref_message_id, buffer + 4, sizeof(ref_message_id));
+
+        size_t start_pos = 6;
+        for (size_t i = start_pos; i < bytes_rx; ++i) {
+            if (buffer[i] == '\0') {
+                break; 
+            }
+            message += buffer[i];
+        }
+
+    } else if(type_to_compare == UDP_MSG || type_to_compare == UDP_ERR){
+        if(type_to_compare == UDP_MSG){
+            type = MSG;
+        } else {
+            type = ERR;
+        }
+        
+        if(bytes_rx < 7){
+            type = ERR;
+            std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+            return;
+        }
+        std::string acquired_dname;
+        size_t start_pos = 3;
+        for (; start_pos < bytes_rx; start_pos++) {
+            if (buffer[start_pos] == '\0') {
+                start_pos += 1;
+                break; 
+            }
+            acquired_dname += buffer[start_pos];
+        }
+        std::string acquired_msg;
+        for (; start_pos < bytes_rx; start_pos++) {
+            if (buffer[start_pos] == '\0') {
+                break; 
+            }
+            acquired_msg += buffer[start_pos];
+        }
+        if(type == MSG){
+            std::cout << acquired_dname << ": " << acquired_msg << std::endl;
+        } else {
+            std::cerr << "ERR FROM " << acquired_dname << ": " << acquired_msg << std::endl;
+        }
+    } else if(type_to_compare == UDP_BYE){
+        type = BYE;
+    } else {
+        type = ERR;
+        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+        return;
+    }
 }
 
 void TCPMessage::process_inbound_msg(size_t bytes_rx){
@@ -364,9 +449,12 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                     message = reply_msg;
                     return;
                 }
-            } else if(msg_vector[0] == "ERR"){
-                type = ERR;
-
+            } else if(msg_vector[0] == "ERR" || msg_vector[0] == "MSG"){
+                if(msg_vector[0] == "ERR"){
+                    type = ERR;
+                } else {
+                    type = MSG;
+                }
                 std::regex pattern("is", std::regex_constants::icase);
                 std::smatch match_regex;
                 if (std::regex_search(help_string, match_regex, pattern)) {
@@ -376,21 +464,11 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
                     return;
                 }
                 remove_line_ending(message_to_extract);
-                std::cerr << "ERR FROM " << msg_vector[2] << ": " << message_to_extract << std::endl;
-                return;
-            } else if(msg_vector[0] == "MSG"){
-                type = MSG;
-
-                std::regex pattern("is", std::regex_constants::icase);
-                std::smatch match_regex;
-                if (std::regex_search(help_string, match_regex, pattern)) {
-                    message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
+                if(type == ERR){
+                    std::cerr << "ERR FROM " << msg_vector[2] << ": " << message_to_extract << std::endl;
                 } else {
-                    std::cerr << "ERR: Unknown incoming message from server" << std::endl;
-                    return;
+                    std::cout << msg_vector[2] << ": " << message_to_extract << std::endl;
                 }
-                remove_line_ending(message_to_extract);
-                std::cout << msg_vector[2] << ": " << message_to_extract << std::endl;
                 return;
             }
         } 

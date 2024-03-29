@@ -25,6 +25,7 @@ class NetworkClient{
         void send_msg(NetworkMessage& msg);
         connection_info* get_arg_info();
         ClientSocket* get_socket();
+        client_info* get_cl_info();
         void dns_lookup();
         void establish_connection();
         struct addrinfo* get_dns_info();

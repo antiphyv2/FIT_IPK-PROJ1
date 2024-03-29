@@ -34,6 +34,10 @@ struct addrinfo* NetworkClient::get_dns_info(){
     return dns_results;
 }
 
+client_info* NetworkClient::get_cl_info(){
+    return &cl_info;
+}
+
 ClientSocket* NetworkClient::get_socket(){
     return socket;
 }
@@ -61,7 +65,7 @@ void NetworkClient::establish_connection(){
 }
 
 void NetworkClient::send_msg(NetworkMessage& msg){
-    ssize_t bytes_sent = send(socket->get_socket_fd(), msg.get_buffer(), msg.get_buffer_size(), 0);
+    ssize_t bytes_sent = send(socket->get_socket_fd(), msg.get_output_buffer(), msg.get_output_buffer_size(), 0);
     if (bytes_sent == -1) {
         std::cerr << "ERR: Message could not be send to server." << std::endl;
     }
@@ -70,7 +74,7 @@ void NetworkClient::send_msg(NetworkMessage& msg){
 size_t TCPClient::accept_msg(NetworkMessage& msg){
     size_t bytes_rx;
     bool r_n_found = false;
-    char* buffer = (char*) msg.get_buffer();
+    char* buffer = (char*) msg.get_input_buffer();
     size_t rx_total = 0;
 
     while(!r_n_found || rx_total >= BUFFER_SIZE - 1){
@@ -91,7 +95,13 @@ size_t TCPClient::accept_msg(NetworkMessage& msg){
 }
 
 size_t UDPClient::accept_msg(NetworkMessage& msg){
-    return msg.get_buffer_size();
+    size_t bytes_rx;
+    bytes_rx = recv(socket->get_socket_fd(), msg.get_input_buffer(), BUFFER_SIZE, 0);
+    if (bytes_rx <= 0){
+      std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+      exit_program(false, EXIT_FAILURE);
+    }
+    return bytes_rx;
 }
 
 bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
