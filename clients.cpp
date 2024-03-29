@@ -99,11 +99,9 @@ void TCPClient::start_tcp_chat(){
     fds[1].fd = STDIN_FILENO;
     fds[1].events = POLLIN;
 
-    client_info info;
-
     while(true){
         int nfds = 2;
-        if(info.reply_msg_sent){
+        if(cl_info.reply_msg_sent){
             nfds = 1;
         }
         int ready_sockets = poll(fds, nfds, -1);
@@ -118,50 +116,52 @@ void TCPClient::start_tcp_chat(){
             inbound_msg.process_inbound_msg(bytes_rx);
 
 
-            if(info.client_state == START_STATE){
+            if(cl_info.client_state == START_STATE){
                 if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
                 }
         
-            } else if(info.client_state == AUTH_STATE){
+            } else if(cl_info.client_state == AUTH_STATE){
                 if(inbound_msg.get_msg_type() == REPLY_OK){
-                    if(info.reply_msg_sent){
+                    if(cl_info.reply_msg_sent){
                         inbound_msg.print_message();
-                        info.reply_msg_sent = false;
-                        info.client_state = OPEN_STATE;
+                        cl_info.reply_msg_sent = false;
+                        cl_info.client_state = OPEN_STATE;
+                        continue;
                     }
 
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                        if(info.reply_msg_sent){
+                        if(cl_info.reply_msg_sent){
                             inbound_msg.print_message();
-                            info.reply_msg_sent = false;
+                            cl_info.reply_msg_sent = false;
+                            continue;
                         }
                 } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE){
                     exit_program(true, EXIT_FAILURE);
                 }
 
-            } else if(info.client_state == OPEN_STATE){
+            } else if(cl_info.client_state == OPEN_STATE){
                 if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE){
                     exit_program(false, EXIT_SUCCESS);
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                    if(info.reply_msg_sent){
+                    if(cl_info.reply_msg_sent){
                         inbound_msg.print_message();
-                        info.reply_msg_sent = false;
+                        cl_info.reply_msg_sent = false;
                     }
-                    info.reply_msg_sent = false;
+                    cl_info.reply_msg_sent = false;
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
-                        if(info.reply_msg_sent){
+                        if(cl_info.reply_msg_sent){
                             inbound_msg.print_message();
-                            info.reply_msg_sent = false;
+                            cl_info.reply_msg_sent = false;
                         }
 
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {
                     TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
-                    err_msg.set_display_name(info.dname);
+                    err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
                     exit_program(true, EXIT_FAILURE);
@@ -183,32 +183,32 @@ void TCPClient::start_tcp_chat(){
             }
 
             TCPMessage outgoing_msg(message, USER_CMD);
-            outgoing_msg.set_display_name(info.dname);
+            outgoing_msg.set_display_name(cl_info.dname);
             outgoing_msg.process_outgoing_msg();
             
             //Set username or change in case of rename command
             if(outgoing_msg.get_msg_type() == AUTH || outgoing_msg.get_msg_type() == RENAME){
-                info.dname = outgoing_msg.get_display_name();
+                cl_info.dname = outgoing_msg.get_display_name();
             }
 
             if(outgoing_msg.is_ready_to_send()){
-                if(info.client_state == START_STATE){
+                if(cl_info.client_state == START_STATE){
                     if(outgoing_msg.get_msg_type() != AUTH){
                         std::cerr << "ERR: You must authorize first." << std::endl;
                     } else {
-                        info.reply_msg_sent = true;
-                        info.client_state = AUTH_STATE;
+                        cl_info.reply_msg_sent = true;
+                        cl_info.client_state = AUTH_STATE;
                         send_msg(outgoing_msg);
                     }
-                } else if(info.client_state == AUTH_STATE){
-                    if (outgoing_msg.get_msg_type() != AUTH && !info.reply_msg_sent){
+                } else if(cl_info.client_state == AUTH_STATE){
+                    if (outgoing_msg.get_msg_type() != AUTH && !cl_info.reply_msg_sent){
                         std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
                     } else if (outgoing_msg.get_msg_type() == AUTH){
-                            info.reply_msg_sent = true;
+                            cl_info.reply_msg_sent = true;
                             send_msg(outgoing_msg);
                     }
-                } else if(info.client_state == OPEN_STATE){
-                    if(validate_msg_open(&info, outgoing_msg)){
+                } else if(cl_info.client_state == OPEN_STATE){
+                    if(validate_msg_open(&cl_info, outgoing_msg)){
                         send_msg(outgoing_msg); 
                     }
                         

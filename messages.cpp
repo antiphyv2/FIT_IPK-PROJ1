@@ -9,7 +9,11 @@ bool NetworkMessage::is_ready_to_send(){
 }
 
 void NetworkMessage::print_message(){
-    std::cout << message << std::endl;
+    if(type == REPLY_OK || type == REPLY_NOK){
+        std::cerr << message << std::endl;
+    } else {
+        std::cout << message << std::endl;
+    }
 }
 
 std::string NetworkMessage::get_display_name(){
@@ -44,7 +48,126 @@ void NetworkMessage::clear_buffer(){
     memset(buffer, 0, sizeof(buffer));
 }
 
-TCPMessage::TCPMessage(std::string input_msg, msg_types msg_type) : NetworkMessage(input_msg, msg_type){}
+// msg_types NetworkMessage::check_user_message(){
+//     std::istringstream TCP_message(message);
+//     std::string fragment;
+//     std::string support_string;
+//     int msg_part_counter = 1;
+//     ready_to_send = true;
+
+//     std::vector<std::string> msg_fragments;
+//     while(TCP_message >> fragment){
+//         msg_fragments.push_back(fragment);
+//     }
+
+//     for(const auto& fragment : msg_fragments){
+//         if(type == USER_CMD){
+//             if(fragment == "/auth"){
+//                 if(msg_fragments.size() != 4){
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
+//                     break;
+//                 }
+//                 type = AUTH;
+//                 //add_to_buffer("AUTH ");
+//             } else if(fragment == "/join"){
+//                 if(msg_fragments.size() != 2){
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+//                     break;
+//                 }
+//                 type = JOIN;
+//                 //add_to_buffer("JOIN ");
+//             } else if(fragment == "/rename"){
+//                 if(msg_fragments.size() != 2){
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
+//                     break;
+//                 }
+//                 type = RENAME;
+//             } else if (fragment == "/help"){
+//                 type = HELP;
+//                 ready_to_send = false;
+//                 std::cout << "Available commands:\n/auth {Username} {Secret} {DisplayName}\n/join {ChannelID}\n/rename {DisplayName}\n/help for showing help." << std::endl;
+//                 break;
+//             } else {    
+//                 type = MSG;
+//                     // add_to_buffer("MSG FROM ");
+//                     // add_to_buffer(display_name);
+//                     // add_to_buffer(" IS ");
+//                     if(!validate_msg_param(message, "MSG")){
+//                         std::cerr << "ERR: Wrong message format or length." << std::endl;
+//                     }
+//                     break;
+//             }
+//         } else if(type == AUTH){
+//             if(msg_part_counter == 1){
+//                 if(validate_msg_param(fragment, "ID")){
+//                     // add_to_buffer(fragment);
+//                     // add_to_buffer(" AS ");
+//                     msg_part_counter++;
+//                 } else {
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+//                     break;
+//                 }
+//             } else if(msg_part_counter == 2){
+//                 if(validate_msg_param(fragment, "SECRET")){
+//                     support_string = fragment;
+//                     msg_part_counter++;
+//                 } else {
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+//                     break;
+//                 }
+//             } else{
+//                 if(validate_msg_param(fragment, "DNAME")){
+//                     // add_to_buffer(fragment);
+//                     // add_to_buffer(" USING ");
+//                     // add_to_buffer(support_string);
+//                     display_name = fragment;
+//                 } else {
+//                     ready_to_send = false;
+//                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
+//                     break;
+//                 }
+//             }
+//         } else if(type == JOIN){
+//             if(validate_msg_param(fragment, "ID")){
+//                 // add_to_buffer(fragment);
+//                 // add_to_buffer(" AS ");
+//                 // add_to_buffer(display_name);
+//             } else {
+//                 ready_to_send = false;
+//                 std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
+//                 break;
+//             }
+//         } else if(type == RENAME){
+//             ready_to_send = false;
+//             if(validate_msg_param(fragment, "ID")){
+//                 // display_name = fragment;
+                
+//             } else {
+//                 std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
+//                 break;
+//             }
+//         } else if(type == ERR){
+//             // add_to_buffer("ERR FROM ");
+//             // add_to_buffer(display_name);
+//             // add_to_buffer(" IS ");
+//             if(validate_msg_param(message, "MSG")){
+//                 // add_to_buffer(message);
+//             } else {
+//                 ready_to_send = false;
+//                 std::cerr << "ERR: Wrong message format or length." << std::endl;
+//             }
+//             break;
+//         } else if(type == BYE){
+//             // add_to_buffer("BYE");
+//             break;
+//         }
+//     }
+// }
 
 void TCPMessage::add_to_buffer(std::string msg_part){
     size_t length = msg_part.length();
@@ -193,6 +316,33 @@ void TCPMessage::process_outgoing_msg(){
     add_line_ending();
 }
 
+void UDPMessage::process_outgoing_msg(){
+
+
+
+
+
+    if(type == BYE){
+        buffer[0] = UDP_BYE;
+        memcpy(&buffer[1], &message_id, sizeof(message_id));
+       std::cout << "Buffer first 3 bytes in hex: ";
+        for (int i = 0; i < 3; ++i) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') 
+                  << static_cast<unsigned>(static_cast<unsigned char>(buffer[i])) << " ";
+        }
+        std::cout << std::dec << std::endl;
+
+    }
+}
+
+void UDPMessage::process_inbound_msg(size_t bytes_rx){
+    std::cout << message;
+}
+
+void UDPMessage::add_to_buffer(std::string msg_part){
+    std::cout << message;
+}
+
 void TCPMessage::process_inbound_msg(size_t bytes_rx){
     std::string help_string(buffer, bytes_rx);
     std::istringstream server_msg(std::string(buffer, bytes_rx));
@@ -298,7 +448,7 @@ void TCPMessage::process_inbound_msg(size_t bytes_rx){
     }
 }
 
-bool TCPMessage::validate_msg_param(std::string parameter, std::string pattern){
+bool NetworkMessage::validate_msg_param(std::string parameter, std::string pattern){
     if(pattern == "ID" || pattern == "SECRET"){
         if(pattern == "ID"){
             if(parameter.size() > 20){

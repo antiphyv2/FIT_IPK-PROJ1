@@ -15,7 +15,6 @@ class ClientSocket{
         ClientSocket(int protocol_type);
         ~ClientSocket();
         void create_socket();
-        void cleanup();
 
         int get_socket_fd();
         int get_socket_type();

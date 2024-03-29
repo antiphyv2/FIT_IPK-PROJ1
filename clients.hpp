@@ -20,7 +20,6 @@ class NetworkClient{
         
         NetworkClient(connection_info* info);
     public:
-        
         connection_info* get_arg_info();
         ClientSocket* get_socket();
         void dns_lookup();
@@ -37,7 +36,12 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
-        //~TCPClient();
+};
+
+class UDPClient : public NetworkClient{
+
+    public:
+        UDPClient(connection_info* info) : NetworkClient(info){}
 };
 
 

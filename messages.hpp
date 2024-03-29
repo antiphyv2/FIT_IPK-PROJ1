@@ -6,8 +6,17 @@
 #include <string>
 #include <cstring>
 #include <regex>
+#include <iomanip>
 
 #define BUFFER_SIZE 1500
+#define UDP_CONFIRM 0x00
+#define UDP_REPLY 0x01
+#define UDP_AUTH 0x02
+#define UDP_JOIN 0x03
+#define UDP_MSG 0x04
+#define UDP_ERR 0xFE
+#define UDP_BYE 0xFF
+
 typedef enum {
     AUTH,
     JOIN,
@@ -20,6 +29,7 @@ typedef enum {
     HELP,
     USER_CMD,
     TO_BE_DECIDED,
+    CONFIRM,
 } msg_types;
 
 class NetworkMessage{
@@ -47,6 +57,8 @@ class NetworkMessage{
         void set_display_name(std::string name);
         msg_types get_msg_type();
         void set_msg_type(msg_types msg_type);
+        bool validate_msg_param(std::string parameter, std::string pattern);
+        msg_types check_user_message();
 
         //NetworkMessage(std::string input_msg, msg_types msg_type);
         virtual ~NetworkMessage() {}
@@ -55,13 +67,24 @@ class NetworkMessage{
 class TCPMessage : public NetworkMessage{
 
     public:
-        TCPMessage(std::string input_msg, msg_types msg_type);
+        TCPMessage(std::string input_msg, msg_types msg_type) : NetworkMessage(input_msg, msg_type){}
 
         void process_outgoing_msg() override;
         void process_inbound_msg(size_t bytes_rx) override;
-        bool validate_msg_param(std::string parameter, std::string pattern);
         void add_to_buffer(std::string msg_part) override;
         void add_line_ending();
         void remove_line_ending(std::string& message);
+};
+
+class UDPMessage : public NetworkMessage{
+
+    private:
+        bool waiting_for_confirm;
+        uint16_t message_id;
+    public:
+        UDPMessage(std::string input_msg, msg_types msg_type, uint16_t msg_id) : NetworkMessage(input_msg, msg_type), message_id(msg_id){}
+        void process_outgoing_msg() override;
+        void process_inbound_msg(size_t bytes_rx) override;
+        void add_to_buffer(std::string msg_part) override;
 };
 #endif

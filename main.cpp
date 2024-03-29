@@ -8,12 +8,12 @@ NetworkClient* client_ptr;
 
 void Signal_handler::graceful_exit(int signal){
     if(signal == SIGINT){
-        exit_program(false, EXIT_SUCCESS);
+        exit_program(true, EXIT_SUCCESS);
     }
 }
 
 void exit_program(bool send_bye, int ret_state){
-    if(send_bye){
+    if(send_bye && client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){
         TCPMessage bye_msg("BYE", BYE);
         bye_msg.process_outgoing_msg();
         client_ptr->send_msg(bye_msg);
@@ -30,7 +30,10 @@ int main(int argc, char* argv[]){
         client_ptr = client;
         client->start_tcp_chat();
     } else {
-        
+        UDPClient* client = new UDPClient(info);
+        client_ptr = client;
+        UDPMessage msg_udp("BYE", BYE, 1);
+        msg_udp.process_outgoing_msg();
     }
     exit_program(false, EXIT_SUCCESS);
     return 0;
