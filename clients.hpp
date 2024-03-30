@@ -9,7 +9,7 @@ typedef struct CL_INFO{
     std::string dname; //User display name
     fsm_states client_state = START_STATE; //Current mat state
     bool reply_msg_sent = false; //Message will require REPLY from server
-    int msg_counter = 1; //MSG counter for UDP
+    int msg_counter = 0; //MSG counter for UDP
 } client_info;
 
 class NetworkClient{

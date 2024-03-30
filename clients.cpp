@@ -184,13 +184,15 @@ void TCPClient::start_tcp_chat(){
                     }
 
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                        if(cl_info.reply_msg_sent){
-                            inbound_msg.print_message();
-                            cl_info.reply_msg_sent = false;
-                            continue;
-                        }
-                } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
-                    //std::cerr << "ERR: Unknown message at current state." << std::endl; 
+                    if(cl_info.reply_msg_sent){
+                        inbound_msg.print_message();
+                        cl_info.reply_msg_sent = false;
+                        continue;
+                    }
+                } else if(inbound_msg.get_msg_type() == ERR){
+                    exit_program(true, EXIT_FAILURE);
+                } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
+                    std::cerr << "ERR: Unknown message at current state." << std::endl; 
                     TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
