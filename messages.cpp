@@ -72,6 +72,10 @@ uint16_t UDPMessage::get_msg_id(){
     return message_id;
 }
 
+uint16_t UDPMessage::get_ref_msg_id(){
+    return ref_message_id;
+}
+
 void NetworkMessage::check_user_message(std::vector<std::string>& message_parts){
     std::istringstream TCP_message(message);
     std::string fragment;
@@ -297,10 +301,13 @@ void UDPMessage::process_outgoing_msg(){
             udp_buffer.push_back(static_cast<uint8_t>(c));
         }
         //udp_buffer.push_back('\0');
+    } else if(type == CONFIRM){
+        udp_buffer.push_back(UDP_CONFIRM);
+        udp_buffer.push_back(message_id >> 8);
+        udp_buffer.push_back(message_id & 0xFF);
     } else {
         return;
     }
-
     for (auto byte : udp_buffer) {
     std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
     }
@@ -315,9 +322,13 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
     }
     uint8_t type_to_compare = buffer[0];
     memcpy(&message_id, buffer + 1, sizeof(message_id));
+    message_id = ntohs(message_id);
 
     if(type_to_compare == UDP_CONFIRM){
         type = CONFIRM;
+        memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
+        ref_message_id = ntohs(ref_message_id);
+        return;
     } else if(type_to_compare == UDP_REPLY){
         if(bytes_rx < 8){
             type = INVALID_MSG;
@@ -332,7 +343,7 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
             message.append("Success: ");
         }
         memcpy(&ref_message_id, buffer + 4, sizeof(ref_message_id));
-
+        ref_message_id = ntohs(ref_message_id);
         int start_pos = 6;
         for (; start_pos < bytes_rx; start_pos++) {
             if (buffer[start_pos] == '\0') {
@@ -355,13 +366,15 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
         }
         std::string acquired_dname;
         int start_pos = 3;
-        for (; start_pos < bytes_rx; start_pos++) {
+        for (int i = start_pos; i < bytes_rx; i++) {
             if (buffer[start_pos] == '\0') {
                 start_pos += 1;
                 break; 
             }
-            acquired_dname += buffer[start_pos];
+            acquired_dname += buffer[i];
+            start_pos++;
         }
+        
         std::string acquired_msg;
         for (; start_pos < bytes_rx; start_pos++) {
             if (buffer[start_pos] == '\0') {

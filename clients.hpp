@@ -94,6 +94,8 @@ class UDPClient : public NetworkClient{
     private:
         struct sockaddr_in server_addr;
         uint16_t server_port;
+        bool confirm_msg_sent;
+        bool change_server_port;
     public:
         UDPClient(connection_info* info);
         void start_udp_chat();

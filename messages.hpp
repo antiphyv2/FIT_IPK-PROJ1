@@ -7,6 +7,7 @@
 #include <cstring>
 #include <regex>
 #include <iomanip>
+#include <arpa/inet.h>
 
 #define BUFFER_SIZE 1500
 #define UDP_CONFIRM 0x00
@@ -213,5 +214,12 @@ class UDPMessage : public NetworkMessage{
          * @return uint16_t message id
          */
         uint16_t get_msg_id();
+
+                /**
+         * @brief Gets UDP reference msg id
+         * 
+         * @return uint16_t reference message id
+         */
+        uint16_t get_ref_msg_id();
 };
 #endif

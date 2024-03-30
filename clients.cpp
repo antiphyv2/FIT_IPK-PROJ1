@@ -7,6 +7,8 @@ NetworkClient::~NetworkClient(){}
 UDPClient::UDPClient(connection_info* info) : NetworkClient(info){
     memset(&server_addr, 0, sizeof(server_addr));
     server_port = -1;
+    confirm_msg_sent = false;
+    change_server_port = true;
 }
 
 TCPClient::~TCPClient(){
@@ -220,7 +222,7 @@ void TCPClient::start_tcp_chat(){
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {
-                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    TCPMessage err_msg("Unknown or invalid message at current state", ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
@@ -286,10 +288,12 @@ void UDPClient::start_udp_chat(){
     fds[0].events = POLLIN;
     fds[1].fd = STDIN_FILENO;
     fds[1].events = POLLIN;
+    std::vector<uint16_t> confirm_id_vector;
+    std::vector<uint16_t> reply_id_vector;
 
     while(true){
         int nfds = 2;
-        if(cl_info.reply_msg_sent){
+        if(cl_info.reply_msg_sent || confirm_msg_sent){
             nfds = 1;
         }
         int ready_sockets = poll(fds, nfds, -1);
@@ -302,6 +306,7 @@ void UDPClient::start_udp_chat(){
             UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
             int bytes_rx = accept_msg(inbound_msg);
             inbound_msg.process_inbound_msg(bytes_rx);
+            std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
 
 
             if(cl_info.client_state == START_STATE){
@@ -311,25 +316,66 @@ void UDPClient::start_udp_chat(){
                 }
         
             } else if(cl_info.client_state == AUTH_STATE){
-                if(inbound_msg.get_msg_type() == REPLY_OK){
-                    if(cl_info.reply_msg_sent){
-                        struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr; //reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
-                        ip_address->sin_port = htons(server_port);
-                        std::cout << "PORT:" << server_port << std::endl;
-                        inbound_msg.print_message();
-                        cl_info.reply_msg_sent = false;
-                        cl_info.client_state = OPEN_STATE;
+                if(inbound_msg.get_msg_type() == CONFIRM){
+                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
+                    uint16_t msg_id = inbound_msg.get_ref_msg_id();
+                    std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
+                    if(confirm_id_vector.front() == msg_id){
+                        confirm_id_vector.erase(confirm_id_vector.begin());
+                        confirm_msg_sent = false;
+                        std::cout << "CONFIRMED ID:" << msg_id << std::endl;
                         continue;
                     }
+
+                } else if(inbound_msg.get_msg_type() == REPLY_OK){
+                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
+                    uint16_t msg_id = inbound_msg.get_ref_msg_id();
+
+                    if(cl_info.reply_msg_sent){
+                        if(change_server_port){
+                            struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
+                            ip_address->sin_port = htons(server_port);
+                            change_server_port = false;
+                        }
+                        std::cout << "here" << reply_id_vector.front() << msg_id;
+                        if(reply_id_vector.front() == msg_id){
+                            reply_id_vector.erase(reply_id_vector.begin());
+                            inbound_msg.print_message();
+                            cl_info.reply_msg_sent = false;
+                            cl_info.client_state = OPEN_STATE;
+                            std::cout << "REPLY ID:" << msg_id << std::endl;
+                            //continue;
+                        }
+                    }
+
+                    UDPMessage confirm_msg("", CONFIRM, msg_id);
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
+
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                        if(cl_info.reply_msg_sent){
+                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
+                    uint16_t msg_id = inbound_msg.get_ref_msg_id();
+                    if(cl_info.reply_msg_sent){
+                        if(change_server_port){
                             struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
                             ip_address->sin_port = htons(server_port);
                             std::cout << "PORT:" << server_port << std::endl;
-                            inbound_msg.print_message();
-                            cl_info.reply_msg_sent = false;
-                            continue;
+                            change_server_port = false;
                         }
+                        
+                        if(reply_id_vector.front() == msg_id){
+                            reply_id_vector.erase(reply_id_vector.begin());
+                            inbound_msg.print_message();
+                            cl_info.reply_msg_sent = true;
+                            //continue;
+                        }
+                    }
+                    UDPMessage confirm_msg("", CONFIRM, msg_id);
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
+
                 } else if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
@@ -346,16 +392,40 @@ void UDPClient::start_udp_chat(){
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE){
                     exit_program(false, EXIT_SUCCESS);
+
+                } else if(inbound_msg.get_msg_type() == CONFIRM){
+                    if(confirm_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                        confirm_id_vector.erase(confirm_id_vector.begin());
+                        confirm_msg_sent = false;
+                        std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;
+                        continue;
+                    }
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                     if(cl_info.reply_msg_sent){
                         inbound_msg.print_message();
                         cl_info.reply_msg_sent = false;
+
+                        if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                                reply_id_vector.erase(reply_id_vector.begin());
+                                inbound_msg.print_message();
+                                cl_info.reply_msg_sent = false;
+                                continue;
+                        }
                     }
+                    std::cout <<"here OPEN NOK";
                     cl_info.reply_msg_sent = false;
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
                         if(cl_info.reply_msg_sent){
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
+
+                            if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                                reply_id_vector.erase(reply_id_vector.begin());
+                                inbound_msg.print_message();
+                                cl_info.reply_msg_sent = false;
+                                std::cout << "REPLY ID:" << inbound_msg.get_ref_msg_id() << std::endl;
+                                continue;
+                            }
                         }
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
@@ -394,7 +464,10 @@ void UDPClient::start_udp_chat(){
                     if(outgoing_msg.get_msg_type() != AUTH){
                         std::cerr << "ERR: You must authorize first." << std::endl;
                     } else {
+                        confirm_id_vector.push_back(outgoing_msg.get_msg_id());
+                        reply_id_vector.push_back(outgoing_msg.get_msg_id());
                         cl_info.reply_msg_sent = true;
+                        confirm_msg_sent = true;
                         cl_info.client_state = AUTH_STATE;
                         send_msg(outgoing_msg);
                     }
@@ -402,16 +475,24 @@ void UDPClient::start_udp_chat(){
                     if (outgoing_msg.get_msg_type() != AUTH && !cl_info.reply_msg_sent){
                         std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
                     } else if (outgoing_msg.get_msg_type() == AUTH){
+                            confirm_id_vector.push_back(outgoing_msg.get_msg_id());
+                            reply_id_vector.push_back(outgoing_msg.get_msg_id());
                             cl_info.reply_msg_sent = true;
+                            confirm_msg_sent = true;
                             send_msg(outgoing_msg);
                     }
                 } else if(cl_info.client_state == OPEN_STATE){
-                    if(validate_msg_open(&cl_info, outgoing_msg)){
-                        send_msg(outgoing_msg); 
+                    if(outgoing_msg.get_msg_type() == JOIN){
+                        cl_info.reply_msg_sent = true;
+                        confirm_msg_sent = true;
+                        reply_id_vector.push_back(outgoing_msg.get_msg_id());
+                    } else if(outgoing_msg.get_msg_type() == AUTH){
+                        std::cerr << "ERR: Already authorized." << std::endl;
+                        continue;
                     }
-                        
+                    confirm_id_vector.push_back(outgoing_msg.get_msg_id());
+                    send_msg(outgoing_msg);
                 }                               
-                
             }   
         }    
     }
