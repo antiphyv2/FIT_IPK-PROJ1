@@ -303,7 +303,7 @@ void UDPClient::start_udp_chat(){
             } else if(cl_info.client_state == AUTH_STATE){
                 if(inbound_msg.get_msg_type() == REPLY_OK){
                     if(cl_info.reply_msg_sent){
-                        struct sockaddr_in* ip_address = reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
+                        struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr; //reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
                         ip_address->sin_port = htons(server_port);
                         std::cout << "PORT:" << server_port << std::endl;
                         inbound_msg.print_message();
@@ -313,7 +313,7 @@ void UDPClient::start_udp_chat(){
                     }
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                         if(cl_info.reply_msg_sent){
-                            struct sockaddr_in* ip_address = reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
+                            struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
                             ip_address->sin_port = htons(server_port);
                             std::cout << "PORT:" << server_port << std::endl;
                             inbound_msg.print_message();
