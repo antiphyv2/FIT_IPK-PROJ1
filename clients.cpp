@@ -75,7 +75,7 @@ void NetworkClient::send_msg(NetworkMessage& msg){
     }
 }
 
-size_t TCPClient::accept_msg(NetworkMessage& msg){
+int TCPClient::accept_msg(NetworkMessage& msg){
     size_t bytes_rx;
     bool r_n_found = false;
     char* buffer = (char*) msg.get_input_buffer();
@@ -98,13 +98,19 @@ size_t TCPClient::accept_msg(NetworkMessage& msg){
     return rx_total;
 }
 
-size_t UDPClient::accept_msg(NetworkMessage& msg){
-    size_t bytes_rx;
+int UDPClient::accept_msg(NetworkMessage& msg){
+    int bytes_rx;
     socklen_t addr_len = sizeof(server_addr);
     bytes_rx = recvfrom(socket->get_socket_fd(), msg.get_input_buffer(), BUFFER_SIZE, 0, (struct sockaddr*) &server_addr, &addr_len);
-    if (bytes_rx <= 0){
-      std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
-      exit_program(false, EXIT_FAILURE);
+    if (bytes_rx <= 0){ 
+
+        if(errno == EWOULDBLOCK || errno == EAGAIN){
+            std::cerr << "ERR: TIMEOUT APPLIED." << std::endl;
+        } else {
+            std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+        }
+        exit_program(false, EXIT_FAILURE);
+    } else {
     }
     return bytes_rx;
 }
@@ -121,7 +127,8 @@ bool validate_msg_open(client_info* info, TCPMessage outgoing_msg){
 }
 
 void TCPClient::start_tcp_chat(){
-    socket->create_socket();
+    socket->create_socket(conn_info);
+    std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
     dns_lookup();
     establish_connection();
 
@@ -144,12 +151,13 @@ void TCPClient::start_tcp_chat(){
 
         if (fds[0].revents & POLLIN) {
             TCPMessage inbound_msg("", TO_BE_DECIDED);
-            size_t bytes_rx = accept_msg(inbound_msg);
+            int bytes_rx = accept_msg(inbound_msg);
             inbound_msg.process_inbound_msg(bytes_rx);
 
 
             if(cl_info.client_state == START_STATE){
-                if(inbound_msg.get_msg_type() == ERR){
+                if(inbound_msg.get_msg_type() != TO_BE_DECIDED){
+                    std::cerr << "ERR: Unknown message at current state." << std::endl;
                     exit_program(true, EXIT_FAILURE);
                 }
         
@@ -168,7 +176,8 @@ void TCPClient::start_tcp_chat(){
                             cl_info.reply_msg_sent = false;
                             continue;
                         }
-                } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE){
+                } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
+                    std::cerr << "ERR: Unknown message at current state." << std::endl; 
                     exit_program(true, EXIT_FAILURE);
                 }
 
@@ -249,7 +258,8 @@ void TCPClient::start_tcp_chat(){
 }
 
 void UDPClient::start_udp_chat(){
-    socket->create_socket();
+    socket->create_socket(conn_info);
+    std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
     dns_lookup();
     establish_connection();
 
@@ -259,11 +269,12 @@ void UDPClient::start_udp_chat(){
     msg_udp->process_outgoing_msg();
     send_msg(*msg_udp);
     delete msg_udp;
+
     UDPMessage udp_recv("", TO_BE_DECIDED, 19122);
-    size_t bytes_rx = accept_msg(udp_recv);
-    udp_recv.process_inbound_msg(bytes_rx);
-    std::cout << std::endl << "INCOMING MSG: ";
-    udp_recv.print_message();
-    std:: cout << "MSG TYPE:" << udp_recv.get_msg_type();
-    std::cout << std::endl << "MSG ID: " << udp_recv.get_msg_id() << std::endl;
+    int bytes_rx = accept_msg(udp_recv);
+    // udp_recv.process_inbound_msg(bytes_rx);
+    // std::cout << std::endl << "INCOMING MSG: ";
+    // udp_recv.print_message();
+    // std:: cout << "MSG TYPE:" << udp_recv.get_msg_type();
+    // std::cout << std::endl << "MSG ID: " << udp_recv.get_msg_id() << std::endl;
 }

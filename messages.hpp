@@ -55,7 +55,7 @@ class NetworkMessage{
          * 
          * @param bytes_rx Bytes received
          */
-        virtual void process_inbound_msg(size_t bytes_rx) = 0;
+        virtual void process_inbound_msg(int bytes_rx) = 0;
 
         /**
          * @brief Message is ready to be send to sever
@@ -166,7 +166,7 @@ class TCPMessage : public NetworkMessage{
         TCPMessage(std::string input_msg, msg_types msg_type) : NetworkMessage(input_msg, msg_type){}
 
         void process_outgoing_msg() override;
-        void process_inbound_msg(size_t bytes_rx) override;
+        void process_inbound_msg(int bytes_rx) override;
 
         /**
          * @brief Adds message part to buffer as a preparation for sending message
@@ -195,7 +195,7 @@ class UDPMessage : public NetworkMessage{
     public:
         UDPMessage(std::string input_msg, msg_types msg_type, uint16_t msg_id) : NetworkMessage(input_msg, msg_type), message_id(msg_id){}
         void process_outgoing_msg() override;
-        void process_inbound_msg(size_t bytes_rx) override;
+        void process_inbound_msg(int bytes_rx) override;
         void* get_buffer();
         void* get_output_buffer() override;
         size_t get_output_buffer_size() override;

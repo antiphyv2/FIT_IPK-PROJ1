@@ -27,7 +27,7 @@ class NetworkClient{
          * @param msg containing buffer in which incoming mesage will be stored
          * @return size_t bytes received
          */
-        virtual size_t accept_msg(NetworkMessage& msg) = 0;
+        virtual int accept_msg(NetworkMessage& msg) = 0;
 
         /**
          * @brief Sends message over socket networking
@@ -84,7 +84,7 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
-        size_t accept_msg(NetworkMessage& msg) override;
+        int accept_msg(NetworkMessage& msg) override;
         ~TCPClient();
 };
 
@@ -95,7 +95,7 @@ class UDPClient : public NetworkClient{
         UDPClient(connection_info* info);
         void start_udp_chat();
 
-        size_t accept_msg(NetworkMessage& msg) override;
+        int accept_msg(NetworkMessage& msg) override;
         ~UDPClient();
 };
 

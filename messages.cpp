@@ -307,7 +307,7 @@ void UDPMessage::process_outgoing_msg(){
     std::cout << std::dec << std::endl; 
 }
 
-void UDPMessage::process_inbound_msg(size_t bytes_rx){
+void UDPMessage::process_inbound_msg(int bytes_rx){
     if(bytes_rx < 3){
         type = ERR;
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
@@ -331,12 +331,12 @@ void UDPMessage::process_inbound_msg(size_t bytes_rx){
         }
         memcpy(&ref_message_id, buffer + 4, sizeof(ref_message_id));
 
-        size_t start_pos = 6;
-        for (size_t i = start_pos; i < bytes_rx; ++i) {
-            if (buffer[i] == '\0') {
+        int start_pos = 6;
+        for (; start_pos < bytes_rx; start_pos++) {
+            if (buffer[start_pos] == '\0') {
                 break; 
             }
-            message += buffer[i];
+            message += buffer[start_pos];
         }
 
     } else if(type_to_compare == UDP_MSG || type_to_compare == UDP_ERR){
@@ -352,7 +352,7 @@ void UDPMessage::process_inbound_msg(size_t bytes_rx){
             return;
         }
         std::string acquired_dname;
-        size_t start_pos = 3;
+        int start_pos = 3;
         for (; start_pos < bytes_rx; start_pos++) {
             if (buffer[start_pos] == '\0') {
                 start_pos += 1;
@@ -381,7 +381,7 @@ void UDPMessage::process_inbound_msg(size_t bytes_rx){
     }
 }
 
-void TCPMessage::process_inbound_msg(size_t bytes_rx){
+void TCPMessage::process_inbound_msg(int bytes_rx){
     std::string help_string(buffer, bytes_rx);
     std::istringstream server_msg(std::string(buffer, bytes_rx));
     std::string msg_part;

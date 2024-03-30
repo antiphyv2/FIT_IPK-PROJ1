@@ -10,16 +10,18 @@ class ClientSocket{
     private:
         int socket_fd; //Socket FD
         int type; //TCP or UDP
+        struct timeval tv; //socket timeout
 
     public:
         ClientSocket(int protocol_type);
         ~ClientSocket();
 
         /**
-         * @brief Creates socket 
+         * @brief Creates network tcp/udp socket 
          * 
+         * @param info pointer to user provided arguments
          */
-        void create_socket();
+        void create_socket(connection_info* info);
 
         /**
          * @brief Socket fd getter
@@ -33,5 +35,12 @@ class ClientSocket{
          * @return socket type
          */
         int get_socket_type();
+
+        /**
+         * @brief Gets a pointer to the socket timeval struct
+         * 
+         * @return struct timeval* pointer to the struct
+         */
+        struct timeval* get_socket_tv();
 };
 #endif
