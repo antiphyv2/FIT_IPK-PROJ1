@@ -309,7 +309,7 @@ void UDPMessage::process_outgoing_msg(){
 
 void UDPMessage::process_inbound_msg(int bytes_rx){
     if(bytes_rx < 3){
-        type = ERR;
+        type = INVALID_MSG;
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return;
     }
@@ -320,7 +320,7 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
         type = CONFIRM;
     } else if(type_to_compare == UDP_REPLY){
         if(bytes_rx < 8){
-            type = ERR;
+            type = INVALID_MSG;
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
             return;
         }
@@ -377,7 +377,7 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
     } else if(type_to_compare == UDP_BYE){
         type = BYE;
     } else {
-        type = ERR;
+        type = INVALID_MSG;
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return;
     }
@@ -393,7 +393,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
     }
 
     if(msg_vector.size() == 0){
-        type = ERR;
+        type = INVALID_MSG;
         std::cerr << "ERR: Empty server msg." << std::endl;
         return;
     }
@@ -424,7 +424,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
                     if (std::regex_search(help_string, match_regex, pattern)) {
                         message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
                     } else {
-                        type = ERR;
+                        type = INVALID_MSG;
                         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                         return;
                     }
@@ -441,7 +441,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
                     if (std::regex_search(help_string, match_regex, pattern)) {
                         message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
                     } else {
-                        type = ERR;
+                        type = INVALID_MSG;
                         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                         return;
                     }
@@ -475,7 +475,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
             }
         } 
 
-        type = ERR;
+        type = INVALID_MSG;
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return;
     }

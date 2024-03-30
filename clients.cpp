@@ -191,7 +191,7 @@ void TCPClient::start_tcp_chat(){
                     }
                 } else if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
-                } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
+                } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
                     TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
                     err_msg.set_display_name(cl_info.dname);
@@ -330,9 +330,11 @@ void UDPClient::start_udp_chat(){
                             cl_info.reply_msg_sent = false;
                             continue;
                         }
-                } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
-                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                } else if(inbound_msg.get_msg_type() == ERR){
+                    exit_program(true, EXIT_FAILURE);
+                } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
+                    UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
@@ -358,7 +360,7 @@ void UDPClient::start_udp_chat(){
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {
-                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
