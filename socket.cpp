@@ -11,7 +11,7 @@ ClientSocket::~ClientSocket(){
     if(socket_fd != -1){
         if((ret_val = close(socket_fd)) == -1){
             std::cerr << "ERR: CLOSING SOCKET." << std::endl;
-            exit(EXIT_FAILURE);
+            exit_program(false, EXIT_FAILURE);
         }
     }
 }
@@ -19,7 +19,7 @@ ClientSocket::~ClientSocket(){
 void ClientSocket::create_socket(connection_info* info){
     if((socket_fd = socket(AF_INET, type, 0)) == -1){
         std::cerr << "ERR: CREATING SOCKET." << std::endl;
-        exit(EXIT_FAILURE);
+        exit_program(false, EXIT_FAILURE);
     }
 
     if(type == SOCK_DGRAM){
@@ -27,8 +27,9 @@ void ClientSocket::create_socket(connection_info* info){
         int ret_val;
         if((ret_val = setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) == -1){
             std::cerr << "ERR: SETTING SOCKET TIMEOUT." << std::endl;
-            exit(EXIT_FAILURE);
+            exit_program(false, EXIT_FAILURE);
         }   
+        
     }
 }
 
