@@ -9,6 +9,7 @@ typedef struct CL_INFO{
     std::string dname; //User display name
     fsm_states client_state = START_STATE; //Current mat state
     bool reply_msg_sent = false; //Message will require REPLY from server
+    int msg_counter = 1; //MSG counter for UDP
 } client_info;
 
 class NetworkClient{
@@ -30,11 +31,11 @@ class NetworkClient{
         virtual int accept_msg(NetworkMessage& msg) = 0;
 
         /**
-         * @brief Sends message over socket networking
+         * @brief Virtual method to send message over socket networking
          * 
          * @param msg to be send over socket
          */
-        void send_msg(NetworkMessage& msg);
+        virtual void send_msg(NetworkMessage& msg) = 0;
 
         /**
          * @brief Returns pointer to structure with CLI provided arguments
@@ -64,12 +65,6 @@ class NetworkClient{
         void dns_lookup();
 
         /**
-         * @brief Connects to server with parameters in dns structure
-         * 
-         */
-        void establish_connection();
-
-        /**
          * @brief Returns pointer to structure with dns information
          * 
          * @return struct addrinfo* pointer to the structure
@@ -84,6 +79,13 @@ class TCPClient : public NetworkClient{
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
         void start_tcp_chat();
+
+        /**
+         * @brief Connects to server with parameters in dns structure
+         * 
+         */
+        void establish_connection();
+        void send_msg(NetworkMessage& msg) override;
         int accept_msg(NetworkMessage& msg) override;
         ~TCPClient();
 };
@@ -91,10 +93,11 @@ class TCPClient : public NetworkClient{
 class UDPClient : public NetworkClient{
     private:
         struct sockaddr_in server_addr;
+        int server_port;
     public:
         UDPClient(connection_info* info);
         void start_udp_chat();
-
+        void send_msg(NetworkMessage& msg) override;
         int accept_msg(NetworkMessage& msg) override;
         ~UDPClient();
 };

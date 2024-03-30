@@ -34,6 +34,6 @@ int main(int argc, char* argv[]){
         client_ptr = client;
         client->start_udp_chat();
     }
-    exit_program(false, EXIT_SUCCESS);
+    //exit_program(false, EXIT_SUCCESS);
     return 0;
 }
