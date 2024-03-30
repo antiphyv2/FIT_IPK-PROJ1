@@ -77,7 +77,10 @@ void TCPClient::send_msg(NetworkMessage& msg){
 }
 
 void UDPClient::send_msg(NetworkMessage& msg){
-    return;
+    int bytes_sent = sendto(socket->get_socket_fd(), msg.get_output_buffer(), msg.get_output_buffer_size(), 0,  get_dns_info()->ai_addr, get_dns_info()->ai_addrlen);
+    if(bytes_sent == -1){
+        std::cerr << "ERR: Message could not be send to server." << std::endl;
+    }
 }
 
 int TCPClient::accept_msg(NetworkMessage& msg){
@@ -300,14 +303,19 @@ void UDPClient::start_udp_chat(){
             } else if(cl_info.client_state == AUTH_STATE){
                 if(inbound_msg.get_msg_type() == REPLY_OK){
                     if(cl_info.reply_msg_sent){
+                        struct sockaddr_in* ip_address = reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
+                        ip_address->sin_port = htons(server_port);
+                        std::cout << "PORT:" << server_port << std::endl;
                         inbound_msg.print_message();
                         cl_info.reply_msg_sent = false;
                         cl_info.client_state = OPEN_STATE;
                         continue;
                     }
-
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                         if(cl_info.reply_msg_sent){
+                            struct sockaddr_in* ip_address = reinterpret_cast<struct sockaddr_in*>(dns_results->ai_addr);
+                            ip_address->sin_port = htons(server_port);
+                            std::cout << "PORT:" << server_port << std::endl;
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
                             continue;
@@ -333,7 +341,6 @@ void UDPClient::start_udp_chat(){
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
                         }
-
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {

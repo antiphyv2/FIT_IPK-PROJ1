@@ -93,7 +93,7 @@ class TCPClient : public NetworkClient{
 class UDPClient : public NetworkClient{
     private:
         struct sockaddr_in server_addr;
-        int server_port;
+        uint16_t server_port;
     public:
         UDPClient(connection_info* info);
         void start_udp_chat();

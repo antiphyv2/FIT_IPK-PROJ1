@@ -324,10 +324,12 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
             return;
         }
-        if(buffer[3] == 0){
+        if(buffer[3] == '\0'){
             type = REPLY_NOK;
+            message.append("Failure: ");
         } else {
             type = REPLY_OK;
+            message.append("Success: ");
         }
         memcpy(&ref_message_id, buffer + 4, sizeof(ref_message_id));
 
