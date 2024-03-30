@@ -89,7 +89,7 @@ int TCPClient::accept_msg(NetworkMessage& msg){
     char* buffer = (char*) msg.get_input_buffer();
     size_t rx_total = 0;
 
-    while(!r_n_found || rx_total >= BUFFER_SIZE - 1){
+    while(!r_n_found || rx_total <= BUFFER_SIZE - 1){
         bytes_rx = recv(socket->get_socket_fd(), buffer + rx_total, 1, 0);
         if (bytes_rx <= 0){
             std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;

@@ -13,10 +13,16 @@ void Signal_handler::graceful_exit(int signal){
 }
 
 void exit_program(bool send_bye, int ret_state){
-    if(send_bye && client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){ //&& client_ptr->get_cl_info()->client_state != START_STATE){
-        TCPMessage bye_msg("BYE", BYE);
-        bye_msg.process_outgoing_msg();
-        client_ptr->send_msg(bye_msg);
+    if(send_bye){
+        if(client_ptr->get_socket()->get_socket_type() == SOCK_STREAM){ //&& client_ptr->get_cl_info()->client_state != START_STATE){
+            TCPMessage bye_msg("BYE", BYE);
+            bye_msg.process_outgoing_msg();
+            client_ptr->send_msg(bye_msg);
+        } else {
+            UDPMessage bye_msg("BYE", BYE, client_ptr->get_cl_info()->msg_counter);
+            bye_msg.process_outgoing_msg();
+            client_ptr->send_msg(bye_msg);
+        }
     }
     delete client_ptr;
     exit(ret_state);
