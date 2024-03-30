@@ -89,7 +89,7 @@ int TCPClient::accept_msg(NetworkMessage& msg){
     char* buffer = (char*) msg.get_input_buffer();
     size_t rx_total = 0;
 
-    while(!r_n_found || rx_total <= BUFFER_SIZE - 1){
+    while(!r_n_found && rx_total <= BUFFER_SIZE - 1){
         bytes_rx = recv(socket->get_socket_fd(), buffer + rx_total, 1, 0);
         if (bytes_rx <= 0){
             std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
@@ -166,7 +166,11 @@ void TCPClient::start_tcp_chat(){
 
             if(cl_info.client_state == START_STATE){
                 if(inbound_msg.get_msg_type() != TO_BE_DECIDED){
-                    std::cerr << "ERR: Unknown message at current state." << std::endl;
+                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    err_msg.set_display_name(cl_info.dname);
+                    err_msg.process_outgoing_msg();
+                    send_msg(err_msg);
+                    //std::cerr << "ERR: Unknown message at current state." << std::endl;
                     exit_program(true, EXIT_FAILURE);
                 }
         
@@ -186,7 +190,11 @@ void TCPClient::start_tcp_chat(){
                             continue;
                         }
                 } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
-                    std::cerr << "ERR: Unknown message at current state." << std::endl; 
+                    //std::cerr << "ERR: Unknown message at current state." << std::endl; 
+                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    err_msg.set_display_name(cl_info.dname);
+                    err_msg.process_outgoing_msg();
+                    send_msg(err_msg);
                     exit_program(true, EXIT_FAILURE);
                 }
 
@@ -321,7 +329,11 @@ void UDPClient::start_udp_chat(){
                             continue;
                         }
                 } else if(inbound_msg.get_msg_type() == ERR || inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG){
+                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
+                    err_msg.set_display_name(cl_info.dname);
+                    err_msg.process_outgoing_msg();
+                    send_msg(err_msg);
                     exit_program(true, EXIT_FAILURE);
                 }
 
