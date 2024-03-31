@@ -283,6 +283,20 @@ void TCPClient::start_tcp_chat(){
     }
 }
 
+void UDPClient::send_confim_exit(UDPMessage inbound_msg, bool exit){
+    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+    confirm_msg.process_outgoing_msg();
+    confirm_msg.get_msg_type();
+    send_msg(confirm_msg);
+    if(exit){
+        if(inbound_msg.get_msg_type() == BYE){
+            exit_program(true, EXIT_SUCCESS);
+        }
+        exit_program(true, EXIT_FAILURE);
+    }   
+}
+
+
 
 void UDPClient::start_udp_chat(){
     socket->create_socket(conn_info);
@@ -381,10 +395,7 @@ void UDPClient::start_udp_chat(){
                         }
                     }
 
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
+                    send_confim_exit(inbound_msg, false);
                     continue;
 
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
@@ -404,18 +415,11 @@ void UDPClient::start_udp_chat(){
                             cl_info.reply_msg_sent = false;
                         }
                     }
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
+                    send_confim_exit(inbound_msg, false);
                     //continue;
 
                 } else if(inbound_msg.get_msg_type() == ERR){
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
-                    exit_program(true, EXIT_FAILURE);
+                    send_confim_exit(inbound_msg, true);
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
                     UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
@@ -428,17 +432,9 @@ void UDPClient::start_udp_chat(){
 
             } else if(cl_info.client_state == OPEN_STATE){
                 if(inbound_msg.get_msg_type() == ERR){
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
-                    exit_program(true, EXIT_FAILURE);
+                    send_confim_exit(inbound_msg, true);
                 } else if(inbound_msg.get_msg_type() == BYE){
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
-                    exit_program(false, EXIT_SUCCESS);
+                    send_confim_exit(inbound_msg, true);
                 } else if(inbound_msg.get_msg_type() == CONFIRM){
                     if(confirm_id == inbound_msg.get_ref_msg_id()){
                         confirm_id_vector.erase(confirm_id_vector.begin());
@@ -457,10 +453,7 @@ void UDPClient::start_udp_chat(){
                             cl_info.reply_msg_sent = false;
                         }
                     }
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
+                    send_confim_exit(inbound_msg, false);
                     
                     
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
@@ -476,18 +469,12 @@ void UDPClient::start_udp_chat(){
                             std::cout << "REPLY ID:" << msg_id << std::endl;
                         }
                     }
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
+                    send_confim_exit(inbound_msg, false);
                     continue;
 
                 } else if(inbound_msg.get_msg_type() == MSG){
                     seen_ids.push_back(inbound_msg.get_msg_id());
-                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
-                    confirm_msg.process_outgoing_msg();
-                    confirm_msg.get_msg_type();
-                    send_msg(confirm_msg);
+                    send_confim_exit(inbound_msg, false);
                 } else {
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_ref_msg_id());
                     confirm_msg.process_outgoing_msg();
