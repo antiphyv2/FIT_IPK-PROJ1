@@ -75,6 +75,12 @@ class NetworkMessage{
         void print_message();
 
         /**
+         * @brief Gets message size
+         * 
+         */
+        size_t get_message_size();
+
+        /**
          * @brief Clears buffer
          * 
          */

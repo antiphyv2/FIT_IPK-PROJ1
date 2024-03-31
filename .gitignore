@@ -50,3 +50,4 @@ ipk_server.pyZone.Identifier
 unused/server1 copy.cpp
 UDPTranslator.py
 UDPMessages.py
+.vscode/settings.json
