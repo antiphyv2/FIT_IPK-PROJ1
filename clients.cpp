@@ -346,7 +346,6 @@ void UDPClient::start_udp_chat(){
                             cl_info.reply_msg_sent = false;
                             cl_info.client_state = OPEN_STATE;
                             std::cout << "REPLY ID:" << msg_id << std::endl;
-                            //continue;
                         }
                     }
 
@@ -354,6 +353,7 @@ void UDPClient::start_udp_chat(){
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
+                    continue;
 
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                     //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
@@ -370,13 +370,13 @@ void UDPClient::start_udp_chat(){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = true;
-                            //continue;
                         }
                     }
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
+                    continue;
 
                 } else if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
