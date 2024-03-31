@@ -19,16 +19,20 @@
 #include <poll.h>
 #include <cctype>
 
+//FSM states needed for parsing logic
 typedef enum {
     START_STATE,
     AUTH_STATE,
     OPEN_STATE,
-    ERROR_STATE,
-    END_STATE,
 } fsm_states;
 
 class Signal_handler{
     public:
+        /**
+         * @brief Handles CTRL-C signal
+         * 
+         * @param signal CTRL-C == SIGINT
+         */
         static void graceful_exit(int signal);
 };
 

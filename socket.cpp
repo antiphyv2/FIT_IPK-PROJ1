@@ -1,7 +1,7 @@
 #include "socket.hpp"
 
 ClientSocket::ClientSocket(int protocol_type){
-    socket_fd = -1;
+    socket_fd = -1; //Default value until socket is created
     type = protocol_type;
     tv = {.tv_sec = 0, .tv_usec = 0};
 }
@@ -22,7 +22,8 @@ void ClientSocket::create_socket(connection_info* info){
         exit_program(false, EXIT_FAILURE);
     }
 
-    if(type == SOCK_DGRAM && info->udp_timeout > 0){
+    //Set a timeout for UDP client
+    if(type == SOCK_DGRAM){
         tv.tv_usec = info->udp_timeout * 1000;
         int ret_val;
         if((ret_val = setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) == -1){

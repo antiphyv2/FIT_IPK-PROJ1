@@ -13,6 +13,11 @@ class ClientSocket{
         struct timeval tv; //socket timeout
 
     public:
+        /**
+         * @brief Construct a new socket object
+         * 
+         * @param protocol_type either SOCK_STREAM or SOCK_DGRAM
+         */
         ClientSocket(int protocol_type);
         ~ClientSocket();
 
