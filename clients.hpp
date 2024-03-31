@@ -78,6 +78,10 @@ class TCPClient : public NetworkClient{
 
     public:
         TCPClient(connection_info* info) : NetworkClient(info){}
+        /**
+         * @brief Main function for TCP communication
+         * 
+         */
         void start_tcp_chat();
 
         /**
@@ -85,6 +89,7 @@ class TCPClient : public NetworkClient{
          * 
          */
         void establish_connection();
+
         void send_msg(NetworkMessage& msg) override;
         int accept_msg(NetworkMessage& msg) override;
         ~TCPClient();
@@ -92,22 +97,42 @@ class TCPClient : public NetworkClient{
 
 class UDPClient : public NetworkClient{
     private:
-        struct sockaddr_in server_addr;
-        uint16_t server_port;
-        bool confirm_msg_sent;
-        bool change_server_port;
-        int retry_count;
-        bool timeout_happened;
-        std::vector<uint16_t> confirm_id_vector;
-        std::vector<uint16_t> reply_id_vector;
-        std::vector<uint16_t> seen_ids;
+        struct sockaddr_in server_addr; //Structure for receiving server info
+        uint16_t server_port; //Server port needed in case of incoming reply from other port
+        bool confirm_msg_sent; //Client will wait for confirm message
+        bool change_server_port; //Indicates if server port has been changed 
+        int retry_count; //Number of already happened retry counts
+        bool timeout_happened; //Timeout has ocured on socket
+        std::vector<uint16_t> confirm_id_vector; //Vector of ids to confirm
+        std::vector<uint16_t> reply_id_vector; //Vector of ids to reply
+        std::vector<uint16_t> seen_ids; //Vector of seen ids
     public:
         UDPClient(connection_info* info);
+
+        /**
+         * @brief Main function for UDP communication
+         * 
+         */
         void start_udp_chat();
+
         void send_msg(NetworkMessage& msg) override;
         int accept_msg(NetworkMessage& msg) override;
+
+        /**
+         * @brief Sends confirm message and exits program if needed
+         * 
+         * @param msg Confirm message to be send
+         * @param exit True if program should exit
+         */
         void send_confim_exit(UDPMessage msg, bool exit);
+
+        /**
+         * @brief Gets a pointer to a vector of seen ids
+         * 
+         * @return std::vector<uint16_t>* returns pointer to a vector of seen ids
+         */
         std::vector<uint16_t>* get_seen_ids();
+
         /**
          * @brief Gets retry count number
          * 

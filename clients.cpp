@@ -66,6 +66,7 @@ void NetworkClient::dns_lookup(){
     hints.ai_socktype = socket->get_socket_type();
     hints.ai_protocol = 0;
 
+    //Obtain address from domain name
     int retreived_info;
     if ((retreived_info = getaddrinfo(conn_info->ip_hostname.c_str(), conn_info->port.c_str(), &hints, &dns_results)) != 0){
         std::cout << "ERR: Could not resolve hostname." << std::endl;
@@ -75,6 +76,7 @@ void NetworkClient::dns_lookup(){
 
 void TCPClient::establish_connection(){
     int ret_val;
+    //Connection to client in case of TCP
     if((ret_val = connect(socket->get_socket_fd(), dns_results->ai_addr, dns_results->ai_addrlen)) != 0){
         std::cout << "ERR: Could not connect to the server." << std::endl;
         exit_program(false, EXIT_FAILURE);
@@ -101,6 +103,7 @@ int TCPClient::accept_msg(NetworkMessage& msg){
     char* buffer = (char*) msg.get_input_buffer();
     size_t rx_total = 0;
 
+    //Receiving by one byte until \r\n found
     while(!r_n_found && rx_total <= BUFFER_SIZE - 1){
         bytes_rx = recv(socket->get_socket_fd(), buffer + rx_total, 1, 0);
         if (bytes_rx <= 0){
@@ -135,28 +138,21 @@ int UDPClient::accept_msg(NetworkMessage& msg){
         }
         
     }
+    //save server port for later use (dynamic port change)
     server_port = ntohs(server_addr.sin_port);
 
     return bytes_rx;
 }
 
-bool validate_msg_open(client_info* info, NetworkMessage& outgoing_msg){
-
-    if(outgoing_msg.get_msg_type() == JOIN){
-        info->reply_msg_sent = true;
-    } else if(outgoing_msg.get_msg_type() == AUTH){
-        std::cerr << "ERR: Already authorized." << std::endl;
-        return false;
-    }
-    return true;
-}
-
 void TCPClient::start_tcp_chat(){
+    //Create socket object
     socket->create_socket(conn_info);
-    std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
+    //Translate domain name if needed
     dns_lookup();
+    //Connect to the server
     establish_connection();
 
+    //Preparing poll structure
     struct pollfd fds[2];
     fds[0].fd = socket->get_socket_fd();
     fds[0].events = POLLIN;
@@ -165,6 +161,7 @@ void TCPClient::start_tcp_chat(){
 
     while(true){
         int nfds = 2;
+        //Set poll fd number to 1 beacsue no reading from stdin unless reply received
         if(cl_info.reply_msg_sent){
             nfds = 1;
         }
@@ -174,6 +171,7 @@ void TCPClient::start_tcp_chat(){
             exit_program(false, EXIT_FAILURE);
         }
 
+        //Event from server
         if (fds[0].revents & POLLIN) {
             TCPMessage inbound_msg("", TO_BE_DECIDED);
             int bytes_rx = accept_msg(inbound_msg);
@@ -185,7 +183,6 @@ void TCPClient::start_tcp_chat(){
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
-                    //std::cerr << "ERR: Unknown message at current state." << std::endl;
                     exit_program(true, EXIT_FAILURE);
                 }
         
@@ -207,6 +204,7 @@ void TCPClient::start_tcp_chat(){
                 } else if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
+                    //Send error message back and exit program
                     TCPMessage err_msg("Unknown or invalid message at current state.", CUSTOM_ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
@@ -234,6 +232,7 @@ void TCPClient::start_tcp_chat(){
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {
+                    //Send error msg back and exit
                     TCPMessage err_msg("Unknown or invalid message at current state", CUSTOM_ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
@@ -246,13 +245,16 @@ void TCPClient::start_tcp_chat(){
         if(fds[1].revents & (POLLIN | POLLHUP)){
             std::string message;
             if(!std::getline(std::cin, message)){
+                //CTRL-D, exit program
                 exit_program(true, EXIT_FAILURE);
             }
-
+            
+            //Skipping empty line
             if(message.empty()){
                 continue;
             }
 
+            //Outgoing message creation and handling user input msg
             TCPMessage outgoing_msg(message, USER_CMD);
             outgoing_msg.set_display_name(cl_info.dname);
             outgoing_msg.process_outgoing_msg();
@@ -262,28 +264,35 @@ void TCPClient::start_tcp_chat(){
                 cl_info.dname = outgoing_msg.get_display_name();
             }
 
+            //Message is supposed to be send
             if(outgoing_msg.is_ready_to_send()){
                 if(cl_info.client_state == START_STATE){
                     if(outgoing_msg.get_msg_type() != AUTH){
                         std::cerr << "ERR: You must authorize first." << std::endl;
                     } else {
                         cl_info.reply_msg_sent = true;
+                        //Auth state after sending message
                         cl_info.client_state = AUTH_STATE;
                         send_msg(outgoing_msg);
                     }
                 } else if(cl_info.client_state == AUTH_STATE){
                     if (outgoing_msg.get_msg_type() != AUTH && !cl_info.reply_msg_sent){
+                        //Reply wasnt ok, auth must be typed again
                         std::cerr << "ERR: Authorization wasnt succesful yet." << std::endl;
                     } else if (outgoing_msg.get_msg_type() == AUTH){
                             cl_info.reply_msg_sent = true;
                             send_msg(outgoing_msg);
                     }
                 } else if(cl_info.client_state == OPEN_STATE){
-                    if(validate_msg_open(&cl_info, outgoing_msg)){
+                    if(outgoing_msg.get_msg_type() == JOIN){
+                        cl_info.reply_msg_sent = true;
                         send_msg(outgoing_msg);
-                        
+                    } else if(outgoing_msg.get_msg_type() != AUTH){
+                        send_msg(outgoing_msg);
+                    } else {
+                        //Auth command is invalid after auth
+                        std::cerr << "ERR: Already authorized." << std::endl;
                     }
-                        
                 }                               
                 
             }   
@@ -292,10 +301,12 @@ void TCPClient::start_tcp_chat(){
 }
 
 void UDPClient::send_confim_exit(UDPMessage inbound_msg, bool exit){
+    //Send confirm message
     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
     confirm_msg.process_outgoing_msg();
     confirm_msg.get_msg_type();
     send_msg(confirm_msg);
+    //Program should also end
     if(exit){
         if(inbound_msg.get_msg_type() == BYE){
             exit_program(true, EXIT_SUCCESS);
@@ -306,21 +317,24 @@ void UDPClient::send_confim_exit(UDPMessage inbound_msg, bool exit){
 
 void UDPClient::start_udp_chat(){
     socket->create_socket(conn_info);
-    std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
+    //std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
     dns_lookup();
-
+    
+    //Poll structure
     struct pollfd fds[2];
     fds[0].fd = socket->get_socket_fd();
     fds[0].events = POLLIN;
     fds[1].fd = STDIN_FILENO;
     fds[1].events = POLLIN;
-    bool skip_message;
-    int confirm_id;
-    int reply_id;
-    bool wait_for_err_confirm = false;
+    
+    bool skip_message; //Skip message if already seen
+    int confirm_id; //Id of message to be confirmed
+    int reply_id; //Id of message to be replied to
+    bool wait_for_err_confirm = false; //Wait for confirm after sending error to exit program
 
     while(true){
         int nfds = 2;
+        //Set poll fd number to 1 beacsue no reading from stdin unless reply received
         if(cl_info.reply_msg_sent || confirm_msg_sent){
             nfds = 1;
         }
@@ -330,27 +344,32 @@ void UDPClient::start_udp_chat(){
             exit_program(false, EXIT_FAILURE);
         }
         
+        //Socket event
         if (fds[0].revents & POLLIN) {
             UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
             int bytes_rx = accept_msg(inbound_msg);
-            std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
+
+            //Validate message id and determine type
             skip_message = inbound_msg.validate_unique_id(bytes_rx, seen_ids);
+            //Id has already been seen, skip the message
             if(skip_message){
                 std::cout << "SKIPPED";
                 continue;
             }
-
+            //Sent error message, wait for confirm and exit program
             if(wait_for_err_confirm){
                 if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == cl_info.msg_counter){
                     exit_program(true, EXIT_SUCCESS);
                 } else {
+                    //wait until confirm arrives
                     continue;
                 }
             }
 
+            //Process the message
             inbound_msg.process_inbound_msg(bytes_rx);
-            
 
+            //Set ids to confirm or reply to from vector of ids
             if(!confirm_id_vector.empty()){
                  confirm_id = confirm_id_vector.front();
             } else {
@@ -372,34 +391,35 @@ void UDPClient::start_udp_chat(){
                 if(inbound_msg.get_msg_type() == CONFIRM){
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     //std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
+                    //If ref id of confirm was expected, no longer waiting for confirm
                     if(confirm_id == msg_id){
                         confirm_id_vector.erase(confirm_id_vector.begin());
                         confirm_msg_sent = false;
-                        //std::cout << "CONFIRMED ID:" << msg_id << std::endl;
-                        //std::cout << "VECFRONT:" << msg_id << std::endl;
                     }
                     continue;
 
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
+                    //Push id to vector since the message has already been seen
                     seen_ids.push_back(inbound_msg.get_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
 
                     if(cl_info.reply_msg_sent){
+                        //If change of the port hasnt happened, switch the port so new messages will be sent to the new one
                         if(change_server_port){
                             struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
                             ip_address->sin_port = htons(server_port);
                             change_server_port = false;
                         }
                         //std::cout << "VECFRONT:" << confirm_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
+                        //If ref id of reply was expected, no longer waiting for reply, change state to open
                         if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
                             cl_info.client_state = OPEN_STATE;
-                            //std::cout << "REPLY ID:" << msg_id << std::endl;
                         }
                     }
-
+                    //send confirm 
                     send_confim_exit(inbound_msg, false);
                     continue;
 
@@ -407,13 +427,14 @@ void UDPClient::start_udp_chat(){
                     seen_ids.push_back(inbound_msg.get_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     if(cl_info.reply_msg_sent){
+                        //If change of the port hasnt happened, switch the port so new messages will be sent to the new one
                         if(change_server_port){
                             struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
                             ip_address->sin_port = htons(server_port);
-                            //std::cout << "PORT:" << server_port << std::endl;
                             change_server_port = false;
                         }
                         //std::cout << "VECFRONT:" << reply_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
+                        //If ref id of reply was expected, no longer waiting for reply, no change of state
                         if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
@@ -425,21 +446,27 @@ void UDPClient::start_udp_chat(){
 
                 } else if(inbound_msg.get_msg_type() == ERR){
                     send_confim_exit(inbound_msg, true);
+
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
+                    //Send error message and set wait_for_err_confirm to true, so only confirm will be accepted later on
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_ref_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    send_msg(confirm_msg);
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
                     UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
                     wait_for_err_confirm = true;
-                    //exit_program(true, EXIT_FAILURE);
                 }
 
             } else if(cl_info.client_state == OPEN_STATE){
                 if(inbound_msg.get_msg_type() == ERR){
                     send_confim_exit(inbound_msg, true);
+
                 } else if(inbound_msg.get_msg_type() == BYE){
-                    send_confim_exit(inbound_msg, true);
+                    send_confim_exit(inbound_msg, false);
+
                 } else if(inbound_msg.get_msg_type() == CONFIRM){
                     if(confirm_id == inbound_msg.get_ref_msg_id()){
                         confirm_id_vector.erase(confirm_id_vector.begin());
@@ -457,6 +484,7 @@ void UDPClient::start_udp_chat(){
                             cl_info.reply_msg_sent = false;
                         }
                     }
+                    //Send confirm
                     send_confim_exit(inbound_msg, false);
                     
                     
@@ -476,9 +504,11 @@ void UDPClient::start_udp_chat(){
                     continue;
 
                 } else if(inbound_msg.get_msg_type() == MSG){
+                    //Seen id and send confirm
                     seen_ids.push_back(inbound_msg.get_msg_id());
                     send_confim_exit(inbound_msg, false);
                 } else {
+                    //Send confirm message for error, then error message
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_ref_msg_id());
                     confirm_msg.process_outgoing_msg();
                     send_msg(confirm_msg);
@@ -495,13 +525,14 @@ void UDPClient::start_udp_chat(){
         if(fds[1].revents & (POLLIN | POLLHUP)){
             std::string message;
             if(!std::getline(std::cin, message)){
+                //EOF
                 exit_program(true, EXIT_FAILURE);
             }
-
+            //Skipping empty line
             if(message.empty()){
                 continue;
             }
-
+            //Create object for outgoing message
             UDPMessage outgoing_msg(message, USER_CMD, cl_info.msg_counter);
             outgoing_msg.set_display_name(cl_info.dname);
             outgoing_msg.process_outgoing_msg();
@@ -511,16 +542,20 @@ void UDPClient::start_udp_chat(){
                 cl_info.dname = outgoing_msg.get_display_name();
             }
 
+            //UDP message is ready to send
             if(outgoing_msg.is_ready_to_send()){
                 cl_info.msg_counter++;
                 if(cl_info.client_state == START_STATE){
                     if(outgoing_msg.get_msg_type() != AUTH){
                         std::cerr << "ERR: You must authorize first." << std::endl;
                     } else {
+                        //Push message id to confirm and reply vector
                         confirm_id_vector.push_back(outgoing_msg.get_msg_id());
                         reply_id_vector.push_back(outgoing_msg.get_msg_id());
+                        //Set confirm and reply send to true
                         cl_info.reply_msg_sent = true;
                         confirm_msg_sent = true;
+                        //In auth state, client will wait for server confirm and reply
                         cl_info.client_state = AUTH_STATE;
                         send_msg(outgoing_msg); 
                     }

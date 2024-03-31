@@ -18,6 +18,7 @@
 #define UDP_ERR 0xFE
 #define UDP_BYE 0xFF
 
+//Message types
 typedef enum {
     AUTH,
     JOIN,
@@ -185,9 +186,16 @@ class TCPMessage : public NetworkMessage{
          * @param msg_part to be added to buffer
          */
         void add_to_buffer(std::string msg_part);
+
         void* get_output_buffer() override;
         size_t get_output_buffer_size() override;
+
+        /**
+         * @brief adds \r\n to the outgoing message
+         * 
+         */
         void add_line_ending();
+
         /**
          * @brief Removes \r\n from TCP message
          * 
@@ -199,15 +207,13 @@ class TCPMessage : public NetworkMessage{
 class UDPMessage : public NetworkMessage{
 
     private:
-        bool waiting_for_confirm;
-        std::vector<uint8_t> udp_buffer;
-        uint16_t message_id;
+        std::vector<uint8_t> udp_buffer; //Buffer for outgoing messages
+        uint16_t message_id; 
         uint16_t ref_message_id;
     public:
         UDPMessage(std::string input_msg, msg_types msg_type, uint16_t msg_id) : NetworkMessage(input_msg, msg_type), message_id(msg_id){}
         void process_outgoing_msg() override;
         void process_inbound_msg(int bytes_rx) override;
-        void* get_buffer();
         void* get_output_buffer() override;
         size_t get_output_buffer_size() override;
 

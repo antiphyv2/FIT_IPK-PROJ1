@@ -9,6 +9,7 @@ bool NetworkMessage::is_ready_to_send(){
 }
 
 void NetworkMessage::print_message(){
+    //Reply messages are printed to standard error ouput
     if(type == REPLY_OK || type == REPLY_NOK){
         std::cerr << message << std::endl;
     } else {
@@ -86,17 +87,21 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
     std::string fragment;
     std::string support_string;
     int msg_part_counter = 1;
+    //This flag changes if message is for local use only susch as rename
     ready_to_send = true;
 
+    //Custom error message is handled elsewhere
     if(type == CUSTOM_ERR){
         return true;
     }
 
     std::vector<std::string> msg_fragments;
+    //Split mesasge to parts
     while(TCP_message >> fragment){
         msg_fragments.push_back(fragment);
     }
 
+    //Iterate over message fragments
     for(const auto& fragment : msg_fragments){
         if(type == USER_CMD){
             if(fragment == "/auth"){
@@ -216,7 +221,9 @@ void TCPMessage::remove_line_ending(std::string& message){
 }
 
 void TCPMessage::process_outgoing_msg(){
+    //Vector of message parts to be added to message
     std::vector<std::string> msg_parts;
+    //Validates user message if exists
     bool msg_valid = check_user_message(msg_parts);
     if(!msg_valid){
         return;
@@ -255,10 +262,11 @@ void TCPMessage::process_outgoing_msg(){
 }
 
 void UDPMessage::process_outgoing_msg(){
-
+    //Vector of message parts to be added to message
     std::vector<std::string> msg_parts;
+    //Custom err dont have to be handled in validation func
     if(type != CUSTOM_ERR){
-         bool msg_valid = check_user_message(msg_parts);
+        bool msg_valid = check_user_message(msg_parts);
         if(!msg_valid){
             return;
         }
@@ -336,6 +344,7 @@ void UDPMessage::process_outgoing_msg(){
 }
 
 bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids){
+    //Message too small for IPK protocol
     if(bytes_rx < 3){
         type = INVALID_MSG;
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
@@ -343,7 +352,7 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
     }
 
     uint8_t type_to_compare = buffer[0];
-
+    //Find out message type
     if(type_to_compare == UDP_CONFIRM){
         type = CONFIRM;
         memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
@@ -358,16 +367,18 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
     } else if(type_to_compare == UDP_BYE){
         type = BYE;
     } else {
+        //Copy ref message id to be able to send confirm
         type = INVALID_MSG;
         memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
         ref_message_id = ntohs(ref_message_id);
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
-
+    //Obtaining message id
     memcpy(&message_id, buffer + 1, sizeof(message_id));
     message_id = ntohs(message_id);
 
+    //Check if id is unique, true means msg will be skipped
     for(auto id : msg_ids){
         if(message_id == id){
             return true;
@@ -378,6 +389,7 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
 
 void UDPMessage::process_inbound_msg(int bytes_rx){
     
+    //These messages dont have to be processed
     if(type == INVALID_MSG || type == CONFIRM){
         return;
     }
@@ -400,7 +412,9 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
         }
         memcpy(&ref_message_id, buffer + 4, sizeof(ref_message_id));
         ref_message_id = ntohs(ref_message_id);
-        int start_pos = 6;
+
+        //Obtatining message from reply
+        int start_pos = 6; //Starting position is 6 because of the message format
         for (; start_pos < bytes_rx; start_pos++) {
             if (buffer[start_pos] == '\0') {
                 break; 
@@ -416,7 +430,8 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
             return;
         }
         std::string acquired_dname;
-        int start_pos = 3;
+        //Obtatining dname
+        int start_pos = 3; //Starting position is 6 because of the message format
         for (int i = start_pos; i < bytes_rx; i++) {
             if (buffer[start_pos] == '\0') {
                 start_pos += 1;
@@ -453,6 +468,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
     std::string msg_part;
     std::vector<std::string> msg_vector;
     while(server_msg >> msg_part){
+        //Split message to parts
         msg_vector.push_back(msg_part);
     }
 
@@ -463,6 +479,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
     }
 
     if(type == TO_BE_DECIDED){
+        //convert chars to upper ones since grammar is case insensitive
         for (char &character : msg_vector[0]) {
             character = std::toupper(character);
         }
@@ -483,6 +500,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
                 if(msg_vector[1] == "OK"){
                     type = REPLY_OK;
 
+                    //Find out part where "is" is located and extract message
                     std::regex pattern("is", std::regex_constants::icase);
                     std::smatch match_regex;
                     if (std::regex_search(help_string, match_regex, pattern)) {
@@ -547,6 +565,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
 }
 
 bool NetworkMessage::validate_msg_param(std::string parameter, std::string pattern){
+    //Validate string with appropriate pattern according to IPK24 chat protocol
     if(pattern == "ID" || pattern == "SECRET"){
         if(pattern == "ID"){
             if(parameter.size() > 20){
