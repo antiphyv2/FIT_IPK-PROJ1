@@ -50,5 +50,13 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
         delete cli_info;
         exit(EXIT_FAILURE);
     }
+
+    if(cli_info->udp_timeout == 0){
+        cli_info->udp_timeout = 250;
+    }
+
+    if(cli_info->max_udp_retransmission == 0){
+        cli_info->max_udp_retransmission = 3;
+    }
     return cli_info;
 }

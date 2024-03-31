@@ -80,6 +80,7 @@ size_t NetworkMessage::get_message_size(){
     return message.size();
 }
 
+
 bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts){
     std::istringstream TCP_message(message);
     std::string fragment;

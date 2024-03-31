@@ -49,6 +49,10 @@ ClientSocket* NetworkClient::get_socket(){
     return socket;
 }
 
+std::vector<uint16_t>* UDPClient::get_seen_ids() {
+        return &seen_ids;
+}
+
 void NetworkClient::dns_lookup(){
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -293,6 +297,7 @@ void UDPClient::start_udp_chat(){
     bool skip_message;
     int confirm_id;
     int reply_id;
+    //bool wait_for_last_confirm = false;
 
     while(true){
         int nfds = 2;
@@ -316,6 +321,15 @@ void UDPClient::start_udp_chat(){
             //std::cout << "REF_ID" << inbound_msg.get_ref_msg_id() << "BUFFER";
             inbound_msg.process_inbound_msg(bytes_rx);
             std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
+
+            // if(wait_for_last_confirm){
+            //     if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == cl_info.msg_counter){
+            //         exit_program(false, EXIT_SUCCESS);
+            //     } else {
+            //         continue;
+            //     }
+            // }
+
             if(!confirm_id_vector.empty()){
                  confirm_id = confirm_id_vector.front();
             } else {

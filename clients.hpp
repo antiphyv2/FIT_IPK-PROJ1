@@ -104,6 +104,7 @@ class UDPClient : public NetworkClient{
         void start_udp_chat();
         void send_msg(NetworkMessage& msg) override;
         int accept_msg(NetworkMessage& msg) override;
+        std::vector<uint16_t>* get_seen_ids();
         ~UDPClient();
 };
 
