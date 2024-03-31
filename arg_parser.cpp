@@ -4,7 +4,7 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
     connection_info* cli_info = new connection_info();
     int cli_arg, server_port;
 
-        //Argument parsing
+    //getopt arg parsing
     while((cli_arg = getopt(argc, argv, "t:s:p:d:r:h")) != -1){
     switch (cli_arg){
         case 't':
@@ -50,7 +50,8 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
         delete cli_info;
         exit(EXIT_FAILURE);
     }
-
+    
+    //If no values were provided, default values are set
     if(cli_info->udp_timeout == 0){
         cli_info->udp_timeout = 250;
     }

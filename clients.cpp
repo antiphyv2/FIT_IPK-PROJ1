@@ -87,7 +87,6 @@ void UDPClient::send_msg(NetworkMessage& msg){
     if(bytes_sent == -1){
         std::cerr << "ERR: Message could not be send to server." << std::endl;
     }
-    std::cout << "BYTES SENT:" << bytes_sent << std::endl;
 }
 
 int TCPClient::accept_msg(NetworkMessage& msg){
@@ -335,14 +334,12 @@ void UDPClient::start_udp_chat(){
                 if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == cl_info.msg_counter){
                     exit_program(true, EXIT_SUCCESS);
                 } else {
-                    wait_for_err_confirm = false;
                     continue;
                 }
             }
 
-            //std::cout << "REF_ID" << inbound_msg.get_ref_msg_id() << "BUFFER";
             inbound_msg.process_inbound_msg(bytes_rx);
-            std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
+            //std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
 
             if(!confirm_id_vector.empty()){
                  confirm_id = confirm_id_vector.front();
@@ -364,11 +361,11 @@ void UDPClient::start_udp_chat(){
             } else if(cl_info.client_state == AUTH_STATE){
                 if(inbound_msg.get_msg_type() == CONFIRM){
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
-                    std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
+                    //std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
                     if(confirm_id == msg_id){
                         confirm_id_vector.erase(confirm_id_vector.begin());
                         confirm_msg_sent = false;
-                        std::cout << "CONFIRMED ID:" << msg_id << std::endl;
+                        //std::cout << "CONFIRMED ID:" << msg_id << std::endl;
                         //std::cout << "VECFRONT:" << msg_id << std::endl;
                     }
                     continue;
@@ -389,7 +386,7 @@ void UDPClient::start_udp_chat(){
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
                             cl_info.client_state = OPEN_STATE;
-                            std::cout << "REPLY ID:" << msg_id << std::endl;
+                            //std::cout << "REPLY ID:" << msg_id << std::endl;
                         }
                     }
 
@@ -403,7 +400,7 @@ void UDPClient::start_udp_chat(){
                         if(change_server_port){
                             struct sockaddr_in* ip_address = (struct sockaddr_in*) dns_results->ai_addr;
                             ip_address->sin_port = htons(server_port);
-                            std::cout << "PORT:" << server_port << std::endl;
+                            //std::cout << "PORT:" << server_port << std::endl;
                             change_server_port = false;
                         }
                         //std::cout << "VECFRONT:" << reply_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
@@ -425,7 +422,7 @@ void UDPClient::start_udp_chat(){
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
                     wait_for_err_confirm = true;
-                    exit_program(true, EXIT_FAILURE);
+                    //exit_program(true, EXIT_FAILURE);
                 }
 
             } else if(cl_info.client_state == OPEN_STATE){
@@ -437,7 +434,7 @@ void UDPClient::start_udp_chat(){
                     if(confirm_id == inbound_msg.get_ref_msg_id()){
                         confirm_id_vector.erase(confirm_id_vector.begin());
                         confirm_msg_sent = false;
-                        std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;   
+                        //std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;   
                     }
                     continue;
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
@@ -462,7 +459,7 @@ void UDPClient::start_udp_chat(){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
-                            std::cout << "REPLY ID:" << msg_id << std::endl;
+                            //std::cout << "REPLY ID:" << msg_id << std::endl;
                         }
                     }
                     send_confim_exit(inbound_msg, false);
@@ -480,7 +477,7 @@ void UDPClient::start_udp_chat(){
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
                     wait_for_err_confirm = true;
-                    exit_program(true, EXIT_FAILURE);
+                    //exit_program(true, EXIT_FAILURE);
                 }
             }
         }

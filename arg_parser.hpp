@@ -3,6 +3,7 @@
 
 #include "main.hpp"
 
+//Structure for cli arguments
 typedef struct INFO{
     std::string ip_hostname;
     std::string port;
@@ -14,6 +15,13 @@ typedef struct INFO{
 class CLI_Parser{
 
 public:
+    /**
+     * @brief 
+     * 
+     * @param argc number of cli args
+     * @param argv array of cli args
+     * @return connection_info* pointer to the structure with args
+     */
     static connection_info* parse_args(int argc, char* argv[]);
 };
 #endif

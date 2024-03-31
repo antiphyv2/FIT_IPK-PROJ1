@@ -329,10 +329,10 @@ void UDPMessage::process_outgoing_msg(){
     } else {
         return;
     }
-    for (auto byte : udp_buffer) {
-    std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
-    }
-    std::cout << std::dec << std::endl; 
+    // for (auto byte : udp_buffer) {
+    // std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
+    // }
+    // std::cout << std::dec << std::endl; 
 }
 
 bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids){
@@ -381,13 +381,11 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
     if(type == INVALID_MSG || type == CONFIRM){
         return;
     }
-    uint8_t type_to_compare = buffer[0];
-    if(type_to_compare == UDP_CONFIRM){
-        type = CONFIRM;
+    if(type == CONFIRM){
         memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
         ref_message_id = ntohs(ref_message_id);
         return;
-    } else if(type_to_compare == UDP_REPLY){
+    } else if(type == REPLY_OK){
         if(bytes_rx < 8){
             type = INVALID_MSG;
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
@@ -410,13 +408,8 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
             message += buffer[start_pos];
         }
 
-    } else if(type_to_compare == UDP_MSG || type_to_compare == UDP_ERR){
-        if(type_to_compare == UDP_MSG){
-            type = MSG;
-        } else {
-            type = ERR;
-        }
-        
+    } else if(type == MSG || type == ERR){
+
         if(bytes_rx < 7){
             type = ERR;
             std::cerr << "ERR: Unknown incoming message from server" << std::endl;
@@ -445,7 +438,7 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
         } else {
             std::cerr << "ERR FROM " << acquired_dname << ": " << acquired_msg << std::endl;
         }
-    } else if(type_to_compare == UDP_BYE){
+    } else if(type == BYE){
         type = BYE;
     } else {
         type = INVALID_MSG;
