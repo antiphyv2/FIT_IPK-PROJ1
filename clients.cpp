@@ -340,7 +340,6 @@ void UDPClient::start_udp_chat(){
                             ip_address->sin_port = htons(server_port);
                             change_server_port = false;
                         }
-                        std::cout << "here" << reply_id_vector.front() << msg_id;
                         if(reply_id_vector.front() == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
@@ -401,13 +400,11 @@ void UDPClient::start_udp_chat(){
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
                     exit_program(true, EXIT_FAILURE);
-                    exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE){
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
-                    exit_program(true, EXIT_FAILURE);
                     exit_program(false, EXIT_SUCCESS);
                 } else if(inbound_msg.get_msg_type() == CONFIRM){
                     if(confirm_id_vector.front() == inbound_msg.get_ref_msg_id()){
@@ -460,10 +457,12 @@ void UDPClient::start_udp_chat(){
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
                 } else {
-                    UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
+                    seen_ids.push_back(inbound_msg.get_msg_id());
+                    UDPMessage err_msg("Unknown or invalid message at current state.", CUSTOM_ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
+                    //confirm_msg_sent = true;
                     exit_program(true, EXIT_FAILURE);
                 }
             }

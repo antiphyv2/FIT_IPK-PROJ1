@@ -32,6 +32,7 @@ typedef enum {
     TO_BE_DECIDED,
     CONFIRM,
     INVALID_MSG,
+    CUSTOM_ERR,
 } msg_types;
 
 class NetworkMessage{

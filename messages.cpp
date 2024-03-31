@@ -120,8 +120,8 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 type = MSG;
                     if(!validate_msg_param(message, "MSG")){
                         std::cerr << "ERR: Wrong message format or length." << std::endl;
+                        return false;
                     }
-                    return false;
             }
         } else if(type == AUTH){
             if(msg_part_counter == 1){
@@ -248,9 +248,13 @@ void TCPMessage::process_outgoing_msg(){
 void UDPMessage::process_outgoing_msg(){
 
     std::vector<std::string> msg_parts;
-    bool msg_valid = check_user_message(msg_parts);
-    if(!msg_valid){
-        return;
+    if(type != CUSTOM_ERR){
+         bool msg_valid = check_user_message(msg_parts);
+        if(!msg_valid){
+            return;
+        }
+    } else {
+        type = ERR;
     }
 
     if(type == AUTH){
@@ -328,9 +332,21 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
-
-    if(buffer[0] == '\x00'){
+    uint8_t type_to_compare = buffer[0];
+    if(type_to_compare == UDP_CONFIRM){
         type = CONFIRM;
+        return false;
+    } else if(type_to_compare == UDP_REPLY){
+        type = REPLY_OK;
+    } else if(type_to_compare == UDP_MSG){
+        type = MSG;
+    } else if(type_to_compare == UDP_ERR){
+        type = ERR;
+    } else if(type_to_compare == UDP_BYE){
+        type = BYE;
+    } else {
+        type = INVALID_MSG;
+        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
 
@@ -346,14 +362,6 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
 }
 
 void UDPMessage::process_inbound_msg(int bytes_rx){
-    // if(bytes_rx < 3){
-    //     type = INVALID_MSG;
-    //     std::cerr << "ERR: Unknown incoming message from server" << std::endl;
-    //     return;
-    // }
-    // uint8_t type_to_compare = buffer[0];
-    // memcpy(&message_id, buffer + 1, sizeof(message_id));
-    // message_id = ntohs(message_id);
     
     if(type == INVALID_MSG){
         return;
@@ -426,7 +434,7 @@ void UDPMessage::process_inbound_msg(int bytes_rx){
         type = BYE;
     } else {
         type = INVALID_MSG;
-        std::cerr << "ERR: Unknown incoming message from server" << std::endl;
+        std::cerr << "ERR: Unknown incoming message from server." << std::endl;
         return;
     }
 }
