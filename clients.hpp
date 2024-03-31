@@ -96,6 +96,8 @@ class UDPClient : public NetworkClient{
         uint16_t server_port;
         bool confirm_msg_sent;
         bool change_server_port;
+        int retry_count;
+        bool timeout_happened;
         std::vector<uint16_t> confirm_id_vector;
         std::vector<uint16_t> reply_id_vector;
         std::vector<uint16_t> seen_ids;
@@ -106,6 +108,12 @@ class UDPClient : public NetworkClient{
         int accept_msg(NetworkMessage& msg) override;
         void send_confim_exit(UDPMessage msg, bool exit);
         std::vector<uint16_t>* get_seen_ids();
+        /**
+         * @brief Gets retry count number
+         * 
+         * @return int returns retry count
+         */
+        int get_retry_count();
         ~UDPClient();
 };
 

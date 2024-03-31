@@ -9,7 +9,12 @@ NetworkClient* client_ptr;
 
 void Signal_handler::graceful_exit(int signal){
     if(signal == SIGINT){
-        exit_program(true, EXIT_SUCCESS);
+        if(client_ptr->get_cl_info()->client_state == START_STATE){
+            exit_program(false, EXIT_SUCCESS);
+        } else {
+            exit_program(true, EXIT_SUCCESS);
+        }
+        
     }
 }
 
@@ -25,6 +30,7 @@ void exit_program(bool send_bye, int ret_state){
             UDPMessage bye_msg("BYE", BYE, client_ptr->get_cl_info()->msg_counter);
             bye_msg.process_outgoing_msg();
             client_ptr->send_msg(bye_msg);
+            int retry_number = 0;
             //Wait for bye confirmation, then allow exit
             while(true){
                 UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
@@ -34,8 +40,12 @@ void exit_program(bool send_bye, int ret_state){
                 if (bytes_rx <= 0){ 
 
                     if(errno == EWOULDBLOCK || errno == EAGAIN){
-                        std::cerr << "ERR: TIMEOUT APPLIED." << std::endl;
-                        break;
+                        //retry limit reached
+                        if(retry_number == client_ptr->get_arg_info()->max_udp_retransmission){
+                            std::cerr << "ERR: MAX TIMEOUTS REACHED." << std::endl;
+                            break;
+                        }
+                        retry_number++;
                     } else {
                         std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
                         break;

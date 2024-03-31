@@ -9,6 +9,8 @@ UDPClient::UDPClient(connection_info* info) : NetworkClient(info){
     server_port = -1;
     confirm_msg_sent = false;
     change_server_port = true;
+    retry_count = 0;
+    timeout_happened = false;
 }
 
 TCPClient::~TCPClient(){
@@ -51,6 +53,10 @@ ClientSocket* NetworkClient::get_socket(){
 
 std::vector<uint16_t>* UDPClient::get_seen_ids() {
         return &seen_ids;
+}
+
+int UDPClient::get_retry_count(){
+    return retry_count;
 }
 
 void NetworkClient::dns_lookup(){
@@ -120,10 +126,14 @@ int UDPClient::accept_msg(NetworkMessage& msg){
 
         if(errno == EWOULDBLOCK || errno == EAGAIN){
             std::cerr << "ERR: TIMEOUT APPLIED." << std::endl;
+            retry_count += 1;
+            timeout_happened = true;
+            
         } else {
             std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+            exit_program(false, EXIT_FAILURE);
         }
-        exit_program(false, EXIT_FAILURE);
+        
     }
     server_port = ntohs(server_addr.sin_port);
 
@@ -270,7 +280,8 @@ void TCPClient::start_tcp_chat(){
                     }
                 } else if(cl_info.client_state == OPEN_STATE){
                     if(validate_msg_open(&cl_info, outgoing_msg)){
-                        send_msg(outgoing_msg); 
+                        send_msg(outgoing_msg);
+                        
                     }
                         
                 }                               
@@ -292,8 +303,6 @@ void UDPClient::send_confim_exit(UDPMessage inbound_msg, bool exit){
         exit_program(true, EXIT_FAILURE);
     }   
 }
-
-
 
 void UDPClient::start_udp_chat(){
     socket->create_socket(conn_info);
@@ -324,6 +333,7 @@ void UDPClient::start_udp_chat(){
         if (fds[0].revents & POLLIN) {
             UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
             int bytes_rx = accept_msg(inbound_msg);
+            std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
             skip_message = inbound_msg.validate_unique_id(bytes_rx, seen_ids);
             if(skip_message){
                 std::cout << "SKIPPED";
@@ -339,7 +349,7 @@ void UDPClient::start_udp_chat(){
             }
 
             inbound_msg.process_inbound_msg(bytes_rx);
-            //std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
+            
 
             if(!confirm_id_vector.empty()){
                  confirm_id = confirm_id_vector.front();
@@ -512,7 +522,7 @@ void UDPClient::start_udp_chat(){
                         cl_info.reply_msg_sent = true;
                         confirm_msg_sent = true;
                         cl_info.client_state = AUTH_STATE;
-                        send_msg(outgoing_msg);
+                        send_msg(outgoing_msg); 
                     }
                 } else if(cl_info.client_state == AUTH_STATE){
                     if (outgoing_msg.get_msg_type() != AUTH && !cl_info.reply_msg_sent){
