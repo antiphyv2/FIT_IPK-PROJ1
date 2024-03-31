@@ -22,7 +22,7 @@ void ClientSocket::create_socket(connection_info* info){
         exit_program(false, EXIT_FAILURE);
     }
 
-    if(type == SOCK_DGRAM){
+    if(type == SOCK_DGRAM && info->udp_timeout > 0){
         tv.tv_usec = info->udp_timeout * 1000;
         int ret_val;
         if((ret_val = setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) == -1){

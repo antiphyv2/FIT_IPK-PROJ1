@@ -306,7 +306,7 @@ void UDPClient::start_udp_chat(){
             std::cerr << "ERR: POLL." << std::endl;
             exit_program(false, EXIT_FAILURE);
         }
-
+        
         if (fds[0].revents & POLLIN) {
             UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
             int bytes_rx = accept_msg(inbound_msg);
@@ -381,9 +381,13 @@ void UDPClient::start_udp_chat(){
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
-                    continue;
+                    //continue;
 
                 } else if(inbound_msg.get_msg_type() == ERR){
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
                     std::cerr << "ERR: Unknown message at current state." << std::endl; 
@@ -396,10 +400,19 @@ void UDPClient::start_udp_chat(){
 
             } else if(cl_info.client_state == OPEN_STATE){
                 if(inbound_msg.get_msg_type() == ERR){
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
+                    exit_program(true, EXIT_FAILURE);
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE){
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
+                    exit_program(true, EXIT_FAILURE);
                     exit_program(false, EXIT_SUCCESS);
-
                 } else if(inbound_msg.get_msg_type() == CONFIRM){
                     if(confirm_id_vector.front() == inbound_msg.get_ref_msg_id()){
                         confirm_id_vector.erase(confirm_id_vector.begin());
@@ -417,8 +430,11 @@ void UDPClient::start_udp_chat(){
                                 reply_id_vector.erase(reply_id_vector.begin());
                                 inbound_msg.print_message();
                                 cl_info.reply_msg_sent = false;
-                                continue;
                         }
+                        UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                        confirm_msg.process_outgoing_msg();
+                        confirm_msg.get_msg_type();
+                        send_msg(confirm_msg);
                     }
                     std::cout <<"here OPEN NOK";
                     cl_info.reply_msg_sent = false;
@@ -433,8 +449,13 @@ void UDPClient::start_udp_chat(){
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
                             std::cout << "REPLY ID:" << inbound_msg.get_ref_msg_id() << std::endl;
-                            continue;
                         }
+                        
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
+                    continue;
                     }
                 } else if(inbound_msg.get_msg_type() == MSG){
                     seen_ids.push_back(inbound_msg.get_msg_id());
@@ -463,7 +484,6 @@ void UDPClient::start_udp_chat(){
             }
 
             UDPMessage outgoing_msg(message, USER_CMD, cl_info.msg_counter);
-            cl_info.msg_counter++;
             outgoing_msg.set_display_name(cl_info.dname);
             outgoing_msg.process_outgoing_msg();
             
@@ -473,6 +493,7 @@ void UDPClient::start_udp_chat(){
             }
 
             if(outgoing_msg.is_ready_to_send()){
+                cl_info.msg_counter++;
                 if(cl_info.client_state == START_STATE){
                     if(outgoing_msg.get_msg_type() != AUTH){
                         std::cerr << "ERR: You must authorize first." << std::endl;

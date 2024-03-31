@@ -320,6 +320,12 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
+
+    if(buffer[0] == '\x00'){
+        type = CONFIRM;
+        return false;
+    }
+
     memcpy(&message_id, buffer + 1, sizeof(message_id));
     message_id = ntohs(message_id);
 
