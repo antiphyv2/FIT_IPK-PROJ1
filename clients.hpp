@@ -96,6 +96,9 @@ class UDPClient : public NetworkClient{
         uint16_t server_port;
         bool confirm_msg_sent;
         bool change_server_port;
+        std::vector<uint16_t> confirm_id_vector;
+        std::vector<uint16_t> reply_id_vector;
+        std::vector<uint16_t> seen_ids;
     public:
         UDPClient(connection_info* info);
         void start_udp_chat();

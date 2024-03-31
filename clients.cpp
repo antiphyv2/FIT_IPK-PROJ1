@@ -9,7 +9,6 @@ UDPClient::UDPClient(connection_info* info) : NetworkClient(info){
     server_port = -1;
     confirm_msg_sent = false;
     change_server_port = true;
-    memset(&server_addr, 0, sizeof(server_addr));
 }
 
 TCPClient::~TCPClient(){
@@ -291,9 +290,6 @@ void UDPClient::start_udp_chat(){
     fds[0].events = POLLIN;
     fds[1].fd = STDIN_FILENO;
     fds[1].events = POLLIN;
-    std::vector<uint16_t> confirm_id_vector;
-    std::vector<uint16_t> reply_id_vector;
-    std::vector<uint16_t> seen_ids;
     bool skip_message;
 
     while(true){

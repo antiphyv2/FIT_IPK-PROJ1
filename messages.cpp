@@ -76,7 +76,7 @@ uint16_t UDPMessage::get_ref_msg_id(){
     return ref_message_id;
 }
 
-void NetworkMessage::check_user_message(std::vector<std::string>& message_parts){
+bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts){
     std::istringstream TCP_message(message);
     std::string fragment;
     std::string support_string;
@@ -94,21 +94,21 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 if(msg_fragments.size() != 4){
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;
-                    break;
+                    return false;
                 }
                 type = AUTH;
             } else if(fragment == "/join"){
                 if(msg_fragments.size() != 2){
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
-                    break;
+                    return false;
                 }
                 type = JOIN;
             } else if(fragment == "/rename"){
                 if(msg_fragments.size() != 2){
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
-                    break;
+                    return false;
                 }
                 type = RENAME;
             } else if (fragment == "/help"){
@@ -121,7 +121,7 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                     if(!validate_msg_param(message, "MSG")){
                         std::cerr << "ERR: Wrong message format or length." << std::endl;
                     }
-                    break;
+                    return false;
             }
         } else if(type == AUTH){
             if(msg_part_counter == 1){
@@ -131,7 +131,7 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 } else {
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
-                    break;
+                    return false;;
                 }
             } else if(msg_part_counter == 2){
                 if(validate_msg_param(fragment, "SECRET")){
@@ -140,7 +140,7 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 } else {
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
-                    break;
+                    return false;
                 }
             } else{
                 if(validate_msg_param(fragment, "DNAME")){
@@ -150,7 +150,7 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 } else {
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command syntax. Usage: /auth {Username} {Secret} {DisplayName}" << std::endl;;
-                    break;
+                    return false;
                 }
             }
         } else if(type == JOIN){
@@ -159,7 +159,7 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
             } else {
                 ready_to_send = false;
                 std::cerr << "ERR: Wrong command syntax. Usage: /join {ChannelID}" << std::endl;
-                break;
+                return false;
             }
         } else if(type == RENAME){
             ready_to_send = false;
@@ -167,18 +167,20 @@ void NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 display_name = fragment;
             } else {
                 std::cerr << "ERR: Wrong command syntax. Usage: /rename {DisplayName}" << std::endl;
-                break;
+                return false;
             }
         } else if(type == ERR){
             if(!validate_msg_param(message, "MSG")){
                 ready_to_send = false;
                 std::cerr << "ERR: Wrong message format or length." << std::endl;
             }
-            break;
+            return false;
         } else if(type == BYE){
             break;
         }
+
     }
+    return true;
 }
 
 void TCPMessage::add_to_buffer(std::string msg_part){
@@ -206,7 +208,10 @@ void TCPMessage::remove_line_ending(std::string& message){
 
 void TCPMessage::process_outgoing_msg(){
     std::vector<std::string> msg_parts;
-    check_user_message(msg_parts);
+    bool msg_valid = check_user_message(msg_parts);
+    if(!msg_valid){
+        return;
+    }
 
    if(type == AUTH){
     add_to_buffer("AUTH ");
@@ -243,7 +248,10 @@ void TCPMessage::process_outgoing_msg(){
 void UDPMessage::process_outgoing_msg(){
 
     std::vector<std::string> msg_parts;
-    check_user_message(msg_parts);
+    bool msg_valid = check_user_message(msg_parts);
+    if(!msg_valid){
+        return;
+    }
 
     if(type == AUTH){
         udp_buffer.push_back(UDP_AUTH);

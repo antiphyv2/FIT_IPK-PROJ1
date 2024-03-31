@@ -155,8 +155,10 @@ class NetworkMessage{
          * @brief Checks if message is from user and split message to parts accordingly
          * 
          * @param message_parts vector of message parts obtained from user
+         * @return true if check succesful
+         * @return false if check unsuccesful
          */
-        void check_user_message(std::vector<std::string>& message_parts);
+        bool check_user_message(std::vector<std::string>& message_parts);
 
         //NetworkMessage(std::string input_msg, msg_types msg_type);
         virtual ~NetworkMessage() {}
