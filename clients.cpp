@@ -291,6 +291,8 @@ void UDPClient::start_udp_chat(){
     fds[1].fd = STDIN_FILENO;
     fds[1].events = POLLIN;
     bool skip_message;
+    int confirm_id;
+    int reply_id;
 
     while(true){
         int nfds = 2;
@@ -308,10 +310,22 @@ void UDPClient::start_udp_chat(){
             int bytes_rx = accept_msg(inbound_msg);
             skip_message = inbound_msg.validate_unique_id(bytes_rx, seen_ids);
             if(skip_message){
+                std::cout << "SKIPPED";
                 continue;
             }
+            //std::cout << "REF_ID" << inbound_msg.get_ref_msg_id() << "BUFFER";
             inbound_msg.process_inbound_msg(bytes_rx);
             std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
+            if(!confirm_id_vector.empty()){
+                 confirm_id = confirm_id_vector.front();
+            } else {
+                confirm_id = -1;
+            }
+            if(!reply_id_vector.empty()){
+                reply_id = reply_id_vector.front();
+            } else {
+                reply_id = -1;
+            }
 
             if(cl_info.client_state == START_STATE){
                 if(inbound_msg.get_msg_type() != TO_BE_DECIDED){
@@ -323,12 +337,13 @@ void UDPClient::start_udp_chat(){
                 if(inbound_msg.get_msg_type() == CONFIRM){
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
-                    if(confirm_id_vector.front() == msg_id){
+                    if(confirm_id == msg_id){
                         confirm_id_vector.erase(confirm_id_vector.begin());
                         confirm_msg_sent = false;
                         std::cout << "CONFIRMED ID:" << msg_id << std::endl;
-                        continue;
+                        //std::cout << "VECFRONT:" << msg_id << std::endl;
                     }
+                    continue;
 
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
                     seen_ids.push_back(inbound_msg.get_msg_id());
@@ -340,7 +355,8 @@ void UDPClient::start_udp_chat(){
                             ip_address->sin_port = htons(server_port);
                             change_server_port = false;
                         }
-                        if(reply_id_vector.front() == msg_id){
+                        std::cout << "VECFRONT:" << confirm_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
+                        if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
@@ -365,11 +381,11 @@ void UDPClient::start_udp_chat(){
                             std::cout << "PORT:" << server_port << std::endl;
                             change_server_port = false;
                         }
-                        
-                        if(reply_id_vector.front() == msg_id){
+                        //std::cout << "VECFRONT:" << reply_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
+                        if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
-                            cl_info.reply_msg_sent = true;
+                            cl_info.reply_msg_sent = false;
                         }
                     }
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
@@ -407,19 +423,19 @@ void UDPClient::start_udp_chat(){
                     send_msg(confirm_msg);
                     exit_program(false, EXIT_SUCCESS);
                 } else if(inbound_msg.get_msg_type() == CONFIRM){
-                    if(confirm_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                    if(confirm_id == inbound_msg.get_ref_msg_id()){
                         confirm_id_vector.erase(confirm_id_vector.begin());
                         confirm_msg_sent = false;
-                        std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;
-                        continue;
+                        std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;   
                     }
+                    continue;
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
                     seen_ids.push_back(inbound_msg.get_msg_id());
                     if(cl_info.reply_msg_sent){
                         inbound_msg.print_message();
                         cl_info.reply_msg_sent = false;
 
-                        if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                        if(reply_id == inbound_msg.get_ref_msg_id()){
                                 reply_id_vector.erase(reply_id_vector.begin());
                                 inbound_msg.print_message();
                                 cl_info.reply_msg_sent = false;
@@ -429,7 +445,6 @@ void UDPClient::start_udp_chat(){
                         confirm_msg.get_msg_type();
                         send_msg(confirm_msg);
                     }
-                    std::cout <<"here OPEN NOK";
                     cl_info.reply_msg_sent = false;
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
                     seen_ids.push_back(inbound_msg.get_msg_id());
@@ -437,7 +452,7 @@ void UDPClient::start_udp_chat(){
                         inbound_msg.print_message();
                         cl_info.reply_msg_sent = false;
 
-                        if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                        if(reply_id == inbound_msg.get_ref_msg_id()){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
@@ -457,7 +472,9 @@ void UDPClient::start_udp_chat(){
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
                 } else {
-                    seen_ids.push_back(inbound_msg.get_msg_id());
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_ref_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    send_msg(confirm_msg);
                     UDPMessage err_msg("Unknown or invalid message at current state.", CUSTOM_ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();

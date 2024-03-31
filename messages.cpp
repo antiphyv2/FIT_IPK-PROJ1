@@ -332,9 +332,13 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
+
     uint8_t type_to_compare = buffer[0];
+
     if(type_to_compare == UDP_CONFIRM){
         type = CONFIRM;
+        memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
+        ref_message_id = ntohs(ref_message_id);
         return false;
     } else if(type_to_compare == UDP_REPLY){
         type = REPLY_OK;
@@ -346,6 +350,8 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
         type = BYE;
     } else {
         type = INVALID_MSG;
+        memcpy(&ref_message_id, buffer + 1, sizeof(ref_message_id));
+        ref_message_id = ntohs(ref_message_id);
         std::cerr << "ERR: Unknown incoming message from server" << std::endl;
         return false;
     }
@@ -363,7 +369,7 @@ bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids)
 
 void UDPMessage::process_inbound_msg(int bytes_rx){
     
-    if(type == INVALID_MSG){
+    if(type == INVALID_MSG || type == CONFIRM){
         return;
     }
     uint8_t type_to_compare = buffer[0];
