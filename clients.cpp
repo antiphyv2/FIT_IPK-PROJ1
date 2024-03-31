@@ -280,6 +280,7 @@ void TCPClient::start_tcp_chat(){
     }
 }
 
+
 void UDPClient::start_udp_chat(){
     socket->create_socket(conn_info);
     std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
@@ -292,6 +293,8 @@ void UDPClient::start_udp_chat(){
     fds[1].events = POLLIN;
     std::vector<uint16_t> confirm_id_vector;
     std::vector<uint16_t> reply_id_vector;
+    std::vector<uint16_t> seen_ids;
+    bool skip_message;
 
     while(true){
         int nfds = 2;
@@ -307,9 +310,12 @@ void UDPClient::start_udp_chat(){
         if (fds[0].revents & POLLIN) {
             UDPMessage inbound_msg("", TO_BE_DECIDED, -1);
             int bytes_rx = accept_msg(inbound_msg);
+            skip_message = inbound_msg.validate_unique_id(bytes_rx, seen_ids);
+            if(skip_message){
+                continue;
+            }
             inbound_msg.process_inbound_msg(bytes_rx);
             std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
-
 
             if(cl_info.client_state == START_STATE){
                 if(inbound_msg.get_msg_type() != TO_BE_DECIDED){
@@ -319,7 +325,6 @@ void UDPClient::start_udp_chat(){
         
             } else if(cl_info.client_state == AUTH_STATE){
                 if(inbound_msg.get_msg_type() == CONFIRM){
-                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
                     if(confirm_id_vector.front() == msg_id){
@@ -330,7 +335,7 @@ void UDPClient::start_udp_chat(){
                     }
 
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
-                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
+                    seen_ids.push_back(inbound_msg.get_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
 
                     if(cl_info.reply_msg_sent){
@@ -356,7 +361,7 @@ void UDPClient::start_udp_chat(){
                     continue;
 
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
-                    //uint16_t msg_id = htons(inbound_msg.get_ref_msg_id());
+                    seen_ids.push_back(inbound_msg.get_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     if(cl_info.reply_msg_sent){
                         if(change_server_port){
@@ -403,6 +408,7 @@ void UDPClient::start_udp_chat(){
                         continue;
                     }
                 } else if(inbound_msg.get_msg_type() == REPLY_NOK){
+                    seen_ids.push_back(inbound_msg.get_msg_id());
                     if(cl_info.reply_msg_sent){
                         inbound_msg.print_message();
                         cl_info.reply_msg_sent = false;
@@ -417,19 +423,21 @@ void UDPClient::start_udp_chat(){
                     std::cout <<"here OPEN NOK";
                     cl_info.reply_msg_sent = false;
                 } else if(inbound_msg.get_msg_type() == REPLY_OK){
-                        if(cl_info.reply_msg_sent){
+                    seen_ids.push_back(inbound_msg.get_msg_id());
+                    if(cl_info.reply_msg_sent){
+                        inbound_msg.print_message();
+                        cl_info.reply_msg_sent = false;
+
+                        if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
+                            reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
                             cl_info.reply_msg_sent = false;
-
-                            if(reply_id_vector.front() == inbound_msg.get_ref_msg_id()){
-                                reply_id_vector.erase(reply_id_vector.begin());
-                                inbound_msg.print_message();
-                                cl_info.reply_msg_sent = false;
-                                std::cout << "REPLY ID:" << inbound_msg.get_ref_msg_id() << std::endl;
-                                continue;
-                            }
+                            std::cout << "REPLY ID:" << inbound_msg.get_ref_msg_id() << std::endl;
+                            continue;
                         }
+                    }
                 } else if(inbound_msg.get_msg_type() == MSG){
+                    seen_ids.push_back(inbound_msg.get_msg_id());
                     UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();

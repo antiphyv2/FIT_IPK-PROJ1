@@ -203,6 +203,16 @@ class UDPMessage : public NetworkMessage{
         size_t get_output_buffer_size() override;
 
         /**
+         * @brief Checks if message with this content has already been seen
+         * 
+         * @param bytes_rx Bytes received
+         * @param msg_ids vector of msg_ids already seen
+         * @return true if id seen
+         * @return false if id not seen 
+         */
+        bool validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids);
+
+        /**
          * @brief Clears output buffer
          * 
          */
