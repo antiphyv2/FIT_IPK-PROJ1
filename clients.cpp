@@ -170,10 +170,9 @@ void TCPClient::start_tcp_chat(){
             int bytes_rx = accept_msg(inbound_msg);
             inbound_msg.process_inbound_msg(bytes_rx);
 
-
             if(cl_info.client_state == START_STATE){
                 if(inbound_msg.get_msg_type() != TO_BE_DECIDED){
-                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    TCPMessage err_msg("Unknown or invalid message at current state.", CUSTOM_ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
@@ -199,8 +198,7 @@ void TCPClient::start_tcp_chat(){
                 } else if(inbound_msg.get_msg_type() == ERR){
                     exit_program(true, EXIT_FAILURE);
                 } else if(inbound_msg.get_msg_type() == BYE || inbound_msg.get_msg_type() == MSG || inbound_msg.get_msg_type() == INVALID_MSG){
-                    std::cerr << "ERR: Unknown message at current state." << std::endl; 
-                    TCPMessage err_msg("Unknown or invalid message at current state.", ERR);
+                    TCPMessage err_msg("Unknown or invalid message at current state.", CUSTOM_ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
@@ -227,7 +225,7 @@ void TCPClient::start_tcp_chat(){
                 } else if(inbound_msg.get_msg_type() == MSG){
                     continue;
                 } else {
-                    TCPMessage err_msg("Unknown or invalid message at current state", ERR);
+                    TCPMessage err_msg("Unknown or invalid message at current state", CUSTOM_ERR);
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
@@ -446,7 +444,6 @@ void UDPClient::start_udp_chat(){
                     seen_ids.push_back(inbound_msg.get_msg_id());
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
                     if(cl_info.reply_msg_sent){
-                        //std::cout << "VECFRONT:" << reply_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
                         if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();
@@ -461,7 +458,6 @@ void UDPClient::start_udp_chat(){
                     uint16_t msg_id = inbound_msg.get_ref_msg_id();
 
                     if(cl_info.reply_msg_sent){
-                        //std::cout << "VECFRONT:" << confirm_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
                         if(reply_id == msg_id){
                             reply_id_vector.erase(reply_id_vector.begin());
                             inbound_msg.print_message();

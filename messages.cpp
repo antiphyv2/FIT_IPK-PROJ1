@@ -88,6 +88,10 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
     int msg_part_counter = 1;
     ready_to_send = true;
 
+    if(type == CUSTOM_ERR){
+        return true;
+    }
+
     std::vector<std::string> msg_fragments;
     while(TCP_message >> fragment){
         msg_fragments.push_back(fragment);
@@ -232,7 +236,7 @@ void TCPMessage::process_outgoing_msg(){
     add_to_buffer(msg_parts.back());
     add_to_buffer(" AS ");
     add_to_buffer(display_name);
-   } else if(type == ERR){
+   } else if(type == ERR || type == CUSTOM_ERR){
     add_to_buffer("ERR FROM ");
     add_to_buffer(display_name);
     add_to_buffer(" IS ");
@@ -529,6 +533,7 @@ void TCPMessage::process_inbound_msg(int bytes_rx){
                 if (std::regex_search(help_string, match_regex, pattern)) {
                     message_to_extract = help_string.substr(match_regex.position() + 3); //length of is + 1 for whitespace
                 } else {
+                    type = INVALID_MSG;
                     std::cerr << "ERR: Unknown incoming message from server" << std::endl;
                     return;
                 }
