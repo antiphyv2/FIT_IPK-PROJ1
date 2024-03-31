@@ -34,6 +34,9 @@ void exit_program(bool send_bye, int ret_state){
                     if(errno == EWOULDBLOCK || errno == EAGAIN){
                         std::cerr << "ERR: TIMEOUT APPLIED." << std::endl;
                         break;
+                    } else {
+                        std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
+                        break;
                     }
                 }
                 std::vector<uint16_t> empty_vec;

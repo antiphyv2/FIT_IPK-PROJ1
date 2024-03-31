@@ -297,7 +297,7 @@ void UDPClient::start_udp_chat(){
     bool skip_message;
     int confirm_id;
     int reply_id;
-    //bool wait_for_last_confirm = false;
+    bool wait_for_err_confirm = false;
 
     while(true){
         int nfds = 2;
@@ -318,17 +318,19 @@ void UDPClient::start_udp_chat(){
                 std::cout << "SKIPPED";
                 continue;
             }
+
+            if(wait_for_err_confirm){
+                if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == cl_info.msg_counter){
+                    exit_program(true, EXIT_SUCCESS);
+                } else {
+                    wait_for_err_confirm = false;
+                    continue;
+                }
+            }
+
             //std::cout << "REF_ID" << inbound_msg.get_ref_msg_id() << "BUFFER";
             inbound_msg.process_inbound_msg(bytes_rx);
             std::cout << "BYTES_RX:" << bytes_rx << "MSG_TYPE" << inbound_msg.get_msg_type() << std::endl;
-
-            // if(wait_for_last_confirm){
-            //     if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == cl_info.msg_counter){
-            //         exit_program(false, EXIT_SUCCESS);
-            //     } else {
-            //         continue;
-            //     }
-            // }
 
             if(!confirm_id_vector.empty()){
                  confirm_id = confirm_id_vector.front();
@@ -420,6 +422,7 @@ void UDPClient::start_udp_chat(){
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
+                    wait_for_err_confirm = true;
                     exit_program(true, EXIT_FAILURE);
                 }
 
@@ -493,7 +496,7 @@ void UDPClient::start_udp_chat(){
                     err_msg.set_display_name(cl_info.dname);
                     err_msg.process_outgoing_msg();
                     send_msg(err_msg);
-                    //confirm_msg_sent = true;
+                    wait_for_err_confirm = true;
                     exit_program(true, EXIT_FAILURE);
                 }
             }
@@ -552,6 +555,7 @@ void UDPClient::start_udp_chat(){
                     }
                     confirm_id_vector.push_back(outgoing_msg.get_msg_id());
                     send_msg(outgoing_msg);
+                    confirm_msg_sent = true;
                 }                               
             }   
         }    
