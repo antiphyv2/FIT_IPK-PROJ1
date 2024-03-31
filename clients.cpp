@@ -9,6 +9,7 @@ UDPClient::UDPClient(connection_info* info) : NetworkClient(info){
     server_port = -1;
     confirm_msg_sent = false;
     change_server_port = true;
+    memset(&server_addr, 0, sizeof(server_addr));
 }
 
 TCPClient::~TCPClient(){
@@ -83,6 +84,7 @@ void UDPClient::send_msg(NetworkMessage& msg){
     if(bytes_sent == -1){
         std::cerr << "ERR: Message could not be send to server." << std::endl;
     }
+    std::cout << "BYTES SENT:" << bytes_sent << std::endl;
 }
 
 int TCPClient::accept_msg(NetworkMessage& msg){
@@ -348,7 +350,7 @@ void UDPClient::start_udp_chat(){
                         }
                     }
 
-                    UDPMessage confirm_msg("", CONFIRM, msg_id);
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
@@ -371,7 +373,7 @@ void UDPClient::start_udp_chat(){
                             //continue;
                         }
                     }
-                    UDPMessage confirm_msg("", CONFIRM, msg_id);
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
                     confirm_msg.process_outgoing_msg();
                     confirm_msg.get_msg_type();
                     send_msg(confirm_msg);
@@ -428,7 +430,10 @@ void UDPClient::start_udp_chat(){
                             }
                         }
                 } else if(inbound_msg.get_msg_type() == MSG){
-                    continue;
+                    UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
+                    confirm_msg.process_outgoing_msg();
+                    confirm_msg.get_msg_type();
+                    send_msg(confirm_msg);
                 } else {
                     UDPMessage err_msg("Unknown or invalid message at current state.", ERR, cl_info.msg_counter);
                     err_msg.set_display_name(cl_info.dname);
