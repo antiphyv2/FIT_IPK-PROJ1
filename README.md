@@ -120,8 +120,12 @@ U UDP komunikace může dojít k přijetí zprávy s duplicitním `MessageID`. V
 Ukončení programu je realizováno pomocí příkazu CTRL-C, příkazu CTRL-D (tedy poslání konce souboru) nebo pokud je konec v souladu s konečným automatem ze zadání projektu, tedy např. server pošle `BYE` zprávu. V každém případě se volá funkce `exit_program`, která dle předaných parametrů rozhodne, zdali je třeba ještě před koncem poslat `BYE` zprávu (pokud ano, je zpráva poslána a v případě UDP je také očekávána zpráva `CONFIRM`), program ukončí a dealokuje paměť. 
 
 ## Testování programu
+Testování probíhalo po celou dobu vývoje programu. Zahrnovalo jak kontrolu úniků paměti a původce neoprávněního přístupu do ní (pomocí funkce `valgrind`), tak nástroje díky kterým bylo možné dívat se na odeslané a přijaté zprávy klienta. Mezi testovací nástroje patřily jak nástroje od velkých společností, tak např. referenční fakultní server nebo studentské testy.
 
 ### TCP klient
+
+
+
 ### UDP klient
 Detail the testing methodologies and validation procedures employed, such as:
 - Unit tests and integration tests that were conducted.
@@ -130,7 +134,7 @@ Detail the testing methodologies and validation procedures employed, such as:
 - How these tests prove the reliability and functionality of the UDP/TCP client.
 
 ## Možná vylepšení
-Chatovací klient jistě není dokonalý a obsahuje několik věcí, které by mohly být v budocnu vylepšeny, mezi ně patří například:
+Chatovací klient není dokonalý a obsahuje několik věcí, které by mohly být v budocnu vylepšeny, mezi ně patří například:
 
 * Vylepšení mechanismu timeoutů, kdy doba do vypršení timeoutu aktuálně nereflektuje skutečnou dobu, pokud před zprávou CONFIRM dorazí jiná zpráva
 * Refaktorizace kódu, kdy je možné více sjednotit funkce pro hlavní logiku jak TCP tak UDP klienta, vyčlenění funkcí do dalších tříd (logika zpracovávání zpráv)
@@ -138,9 +142,3 @@ Chatovací klient jistě není dokonalý a obsahuje několik věcí, které by m
 * Přidání časového razítka při odeslaných a přijatých zprávách
 ## Zdroje
 
-List all the sources used during the development of the project. This could include:
-- Books, articles, and papers on networking and protocol theory.
-- Documentation for any libraries or frameworks used.
-- Websites, forums, and discussion threads that provided useful insights or solutions.
-
-Remember, a good bibliography not only credits sources but also helps others find resources for learning and problem-solving.
