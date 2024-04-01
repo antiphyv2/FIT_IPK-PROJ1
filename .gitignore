@@ -51,3 +51,13 @@ unused/server1 copy.cpp
 UDPTranslator.py
 UDPMessages.py
 .vscode/settings.json
+unused copy/fsm.cpp
+unused copy/fsm.hpp
+unused copy/random
+unused copy/random.cpp
+unused copy/server1
+unused copy/server1.cpp
+unused copy/socket.cpp
+unused copy/server1 copy.cpp
+unused/clients.cpp
+unused/clients.hpp

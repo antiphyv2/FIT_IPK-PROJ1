@@ -139,6 +139,35 @@ class UDPClient : public NetworkClient{
          * @return int returns retry count
          */
         int get_retry_count();
+        
+        /**
+         * @brief Sends error mesage waits for confirm and exits
+         * 
+         * @param confirm_id Confirm_id to be validated
+         * @param reply_id Reply_id to be validated
+         */
+        void send_error_exit(int* confirm_id, int* reply_id);
+
+        /**
+         * @brief Waits for confirm and send message back accoreding to number of retries
+         * 
+         * @param confirm_id Confirm_id to be validated
+         * @param reply_id Reply_id to be validated
+         * @param outgoing_msg Message to be sent if confirm timeout happened
+         * @param exit_program true if program should end
+         */
+        void handle_timeout(int* confirm_id, int* reply_id, UDPMessage& outgoing_msg, bool exit_program);
+
+        /**
+         * @brief Handles message and validates if message is in correct state
+         * 
+         * @param skip_message If message should be skipper
+         * @param inbound_msg Message to be processed
+         * @param confirm_id Id to be validated
+         * @param reply_id Reply_id to be validated
+         * @param bytes_rx Bytes received
+         */
+        void fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, int* confirm_id, int* reply_id, int bytes_rx);
         ~UDPClient();
 };
 

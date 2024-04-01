@@ -46,6 +46,7 @@ void exit_program(bool send_bye, int ret_state){
                             break;
                         }
                         retry_number++;
+                        continue;
                     } else {
                         std::cerr << "ERR: NO DATA RECEIVED FROM SERVER." << std::endl;
                         break;
@@ -57,7 +58,7 @@ void exit_program(bool send_bye, int ret_state){
 
                 //Correct confirm arrived, client can now exit
                 if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == client_ptr->get_cl_info()->msg_counter){
-                    std::cout << "CONFIRM ARRIVED:" << std::endl;
+                    //std::cout << "CONFIRM ARRIVED:" << std::endl;
                     break;
                 }
             }
