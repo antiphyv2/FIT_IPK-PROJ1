@@ -141,4 +141,8 @@ Chatovací klient není dokonalý a obsahuje několik věcí, které by mohly b�
 * Přídání dalších podporovaných příkazů
 * Přidání časového razítka při odeslaných a přijatých zprávách
 ## Zdroje
-
+- Linux manual page - poll(2). [online]. [cit. 2024-04-01]. Dostupné z: https://man7.org/linux/man-pages/man2/poll.2.html
+- Transmission Control Protocol. In: *Wikipedia: the free encyclopedia*. [online]. 31. 1. 2024. [cit. 2024-04-01]. Dostupné z: https://cs.wikipedia.org/wiki/Transmission_Control_Protocol
+- User Datagram Protocol. In: *Wikipedia: the free encyclopedia*. [online]. 18. 11. 2023. [cit. 2024-04-01]. Dostupné z: https://cs.wikipedia.org/wiki/User_Datagram_Protocol
+- DOSTÁL R. Sockety a C/C++: funkce poll a závěr. [online].  [cit. 2024-04-01]. Dostupné z: https://www.root.cz/clanky/sokety-a-c-funkce-poll-a-zaver
+- IPK Project 1: Client for a chat server using IPK24-CHAT protocol [online]. [cit. 2024-04-01]. Dostupné z: https://git.fit.vutbr.cz/NESFIT/IPK-Projects-2024/src/branch/master/Project%201
