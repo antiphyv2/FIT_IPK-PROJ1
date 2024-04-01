@@ -1,3 +1,9 @@
+/**
+ * @file socket.hpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
+
 #ifndef SOCKET_HPP
 #define SOCKET_HPP
 

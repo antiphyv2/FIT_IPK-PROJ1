@@ -40,7 +40,7 @@ Tento soubor je dokumentací k prvnímu projektu do předmětu [IPK], Počítač
 
 ### Stručný popis
 
-Program slouží jako chatovací klient schopný komunikace se vzdáleným serverem pomocí protokolu IPK24-CHAT, který zajíšťuje definovaný formát zpráv posílaných mezi sebou.Tento protokol je navíc postaven nad transportní protokoly TCP/UDP, přičemž jeden z nich klient k připojení na vzdálený server používá. Se serverem klient komunikuje pomocí několika definovaných zpráv viz [Spuštění a ovládání programu](#spuštění-a-ovládání-programu). V případě, že chce klient ukončit ukončit komunikaci se serverem, může tak učinit pomocí CTRL-C, které server informuje o konci spojení a ukončí program.
+Program slouží jako chatovací klient schopný komunikace se vzdáleným serverem pomocí protokolu IPK24-CHAT, který zajíšťuje definovaný formát zpráv posílaných mezi sebou.Tento protokol je navíc postaven nad transportní protokoly TCP/UDP, přičemž jeden z nich klient k připojení na vzdálený server používá. Se serverem klient komunikuje pomocí několika definovaných zpráv viz [Ovládání programu](#ovládání-programu). V případě, že chce klient ukončit ukončit komunikaci se serverem, může tak učinit pomocí CTRL-C, které server informuje o konci spojení a ukončí program.
 
 ### Spuštění programu
 
@@ -99,7 +99,7 @@ Na začátku programu dochází ke zpracování argumentů od uživatele pomocí
 Po zpracování argumentů dochází dle parametru typu protokolu k vytvoření instance TCP či UDP klienta a volání odpovídající metody, která zahají hlavní logiku programu. Následně pro oba klienty platí, že dochází k vytvoření socketu a volání metody `dns_lookup`, která pro případné zadané doménové jméno najde odpovídající IP adresu, v opačném případě se program ukončí. U TCP je navíc ještě zavolána funkce `connect`, která se serverem naváže stabilní spojení (narozdíl od UDP). V neposlední řadě dojde k vytvoření struktury pro funkci poll a její naplnění file descriptory pro socket a standardní vstup.
 
 ### Příjmání a odesílání zpráv
-Veškerá komunikace se děje v jediném `while loopu`, kdy podmínka kontroluje zdali je příchozí událost ze standardního vstupu či jde o příchozí zprávu ze serveru a dojde k pokračování v odpovídající větvi. Příjmání zpráv je u TCP řešeno pomocí funkce `recv` a dochází k načítání po 1 bytu, dokud není nalezen ukončovač `/r/n`, u UDP je načitání prováděno pomocí funkce `recvfrom`, jelikož po úspešném příjetí zprávy je potřeba změnit port, na který budou následující zprávy odesílány. Zpráva je narozdíl od TCP načtena naráz, jelikož zpráva do něj přijde vždy 1 (u TCP by takto mohlo v bufferu skončit zpráv více). Kvůli zmíněné změne portu pro UDP je používáná funkce `sendto` a pro TCP pouze funkce `send`.
+Veškerá komunikace se děje v jediném `while loopu`, kdy podmínka kontroluje zdali je příchozí událost ze standardního vstupu či jde o příchozí zprávu ze serveru a dojde k pokračování v odpovídající větvi. Příjmání zpráv je u TCP řešeno pomocí funkce `recv` a dochází k načítání po 1 bytu, dokud není nalezen ukončovač `/r/n`, u UDP je načitání prováděno pomocí funkce `recvfrom`, jelikož po úspešném příjetí zprávy je potřeba změnit port, na který budou následující zprávy odesílány. Zpráva je narozdíl od TCP načtena naráz, jelikož zpráva do něj přijde vždy 1 (u TCP by takto mohlo v bufferu skončit zpráv více). Kvůli zmíněné změně portu pro UDP je používáná funkce `sendto` a pro TCP pouze funkce `send`.
 
 ### Kontrola syntaxe zpráv
 Během příjmání a odesílání zpráv dochází simultánně ke kontrole zpráv od uživatele, které jsou kontrolovány pomocí funkce `check_user_message`, zdali se jedná o příkaz a následně zformátovány do vhodného tvaru pro odeslání v závislosti na TCP/UDP protokolu pomocí funkce `process_outgoing_message` a rovněž dochází ke kontrole zpráv od serveru (funkce `process_inbound_message`), které jsou rozpoznány a předány ke kontrole dále.
@@ -120,18 +120,222 @@ U UDP komunikace může dojít k přijetí zprávy s duplicitním `MessageID`. V
 Ukončení programu je realizováno pomocí příkazu CTRL-C, příkazu CTRL-D (tedy poslání konce souboru) nebo pokud je konec v souladu s konečným automatem ze zadání projektu, tedy např. server pošle `BYE` zprávu. V každém případě se volá funkce `exit_program`, která dle předaných parametrů rozhodne, zdali je třeba ještě před koncem poslat `BYE` zprávu (pokud ano, je zpráva poslána a v případě UDP je také očekávána zpráva `CONFIRM`), program ukončí a dealokuje paměť. 
 
 ## Testování programu
-Testování probíhalo po celou dobu vývoje programu. Zahrnovalo jak kontrolu úniků paměti a původce neoprávněního přístupu do ní (pomocí funkce `valgrind`), tak nástroje díky kterým bylo možné dívat se na odeslané a přijaté zprávy klienta. Mezi testovací nástroje patřily jak nástroje od velkých společností, tak např. referenční fakultní server nebo studentské testy.
+Testování probíhalo po celou dobu vývoje programu. Zahrnovalo jak kontrolu úniků paměti a původce neoprávněního přístupu do ní (pomocí funkce `valgrind`), tak nástroje díky kterým bylo možné dívat se na odeslané a přijaté zprávy klienta. Mezi testovací software patřily jak specializované nástroje (`netcat`, `wireshark`), tak např. referenční fakultní server nebo vlastní udp server. Všechny testy byly spouštěny na systému Ubuntu, který běžel v rámci `WSL 2` pod systémem Windows. Všechny příklady testů používají stejnou takřka sadu příkazů, jímž je ověření, poslání zprávy a ukončení spojení.
 
 ### TCP klient
+Testování TCP klienta bylo o něco jednodušší než testování UDP klienta a to díky  tomu, že zprávy mezi serverem a klientem chodí v normální textové podobě, tak jak ji známe. Testování TCP klienta probíhalo přes:
 
+1. [Netcat](https://netcat.sourceforge.net/) spuštěný na loopback rozhraní
+
+    Testování pomocí netcatu pobíhalo tak, že v jednom terminálu byl spuštěn server (simulován právě pomocí netcatu) a v druhém terminálu byl spuštěn klient, který se na daný server připojil. Komunikace následně probíhala ručně, kdy byl na klientovi zadán příkaz nebo poslána zpráva a na netcatu byla ručně zadána odpověď. Tímto způsobem bylo možné otestovat vše, co TCP funkcionalita vyžadovala, jen bylo zdlouhavé psát zprávy od serveru ve správném formátu.
+
+    Server byl spuštěn tímto příkazem:
+    ```sh
+    nc -4 -C -l -v 127.0.0.1 4567
+    ```
+    Klient byl spuštěn pomocí tohoto příkazu
+    ```sh
+    ./ipk24chat-client -t tcp -s localhost -p 4567
+    ```
+
+    V následující tabulce je zachycena komunikace mezi klientem a serverem ze strany klienta:
+    ```sh
+    /auth xlogin00 topsecret Samik
+    Success: v poradku
+    jsem overeny uzivatel
+    /join jinykanal
+    ahoj
+    Failure: nepripojim te
+    ^C
+    ```
+
+    V následující tabulce je komunikace zachycena pomocí ze strany serveru:
+    ```sh
+    Listening on localhost 4567
+    Connection received on localhost 49096
+    AUTH xlogin00 AS Samik USING topsecret
+    REPLy OK is v poradku
+    MSG FROM Samik IS jsem overeny uzivatel
+    JOIN jinykanal AS Samik
+    REPLY nok is nepripojim te
+    MSG FROM Samik IS ahoj
+    BYE
+    ```
+    Lze si všimnout, že zpráva ahoj zadána ihned po zprávě `JOIN` dorazila až poté, co server na zprávu odpověděl. Poté co se klient rozhodl ukončit spojení, které realizoval přes CTRL-C poslal ještě serveru zprávu `BYE`. Za zmínku také stojí, že server může poslat klíčová slova zprávy malými písmeny v souladu s gramatikou v zadání projektu.
+
+    Jako speciální případy u testování pomocí netcatu jsem vybral:
+    - případ, kdy zadá uživatel příkaz který neexistuje
+    - délka jednoho z parametrů příkazu přesáhne určité hodnoty.
+    - opětovná snaha o autorizaci po již úspěšně ověřené předešlé autorizace
+
+
+    Všechny tyto případy jsou zachyceny v tabulce níže:
+    ```sh
+    /auth xhejni00 topsecret Samik
+    Success: ok
+
+    /prikaz
+    ERR: Wrong command. Type /help for help
+
+    /join Makovapanenkamelakobedusushismedvedem
+    ERR: Wrong command syntax. Usage: /join {ChannelID}
+
+    /auth xhejni00 topsecret Samik
+    ERR: Already authorized.
+    ```
+    U žádného z příkazů nedojde k ukončení klienta, dojde pouze k vypsání chybové hlášky a je očekáváno opětovné zadání zprávy/příkazu, tedy v soulaldu se zadáním.  
+
+
+2. Referenční server  
+   
+    Jako druhou možnost jak testovat projekt byl zvolen referenční fakultní server s doménovým jménem `anton5.fit.vutbr.cz`. Jeho výhodou oproti testování přes netcat je, že zprávy posílá automaticky a taky lze v reálném čase skutečně komunikovat s ostatními uživateli na tomto serveru.
+
+    Na následující tabulce je zachycena kominikace na referenčním TCP serveru:
+    ```sh
+    /auth xlogin00 topsecret susenka
+    Success: Authentication successful.
+    Server: susenka joined discord.general.
+    Server: jani joined discord.general.
+    ahoj
+    jani: ahoj
+    /join jinam
+    Success: Channel jinam successfully joined.
+    ^C
+    ```
+    Testování na referenčním serveru bylo prováděno až ke konci projektu, jelikož testování přes locální netcat server bylo dostačující a nehrozilo, že bude server přehnaně zatížen kvůli možné chybě v kódu (while true loop).
 
 
 ### UDP klient
-Detail the testing methodologies and validation procedures employed, such as:
-- Unit tests and integration tests that were conducted.
-- Any test frameworks used.
-- Examples of tests and their outcomes.
-- How these tests prove the reliability and functionality of the UDP/TCP client.
+Testování UDP klienta bylo mnohem kompikovanější než u TCP, jelikož posílání zpráv je realizováno v binární podobě, a tak není možné snadno odpovídat zpět například pomocí netcat serveru a navíc je potřeba při nastaveném socket timeoutu odpovědět včas jinak je možné snadno dosáhnout limitu pro timeout a dojít tak u končení klienta. Přesto bylo realizováno několik možností jak spojení testovat.
+
+1. Netcat na loopback rozhraní
+
+    I přes úskalí UDP byl projekt částečně přes netcat testován, konkrétněji posílání zpráv přes UDP protokol. V takovém případě bylo možné vyčíst přijaté zprávy z netcat serveru, nicméně nebylo možné na ně odpovědět zpět (kvůli jejich formátu). Rovněž nastal problém s možnými timeouty, kdy po jejich implementaci nebylo možné netcat validně využívat, protože v daném časovém intervalu nemohla být doručena odpověď.
+    Proto se stal netcat brzo nepřijatelným testovacím prostředím.  
+
+    Server byl spuštěn s tímto příkazem (klient spuštěn stejně jako u TCP):
+    ```sh
+    nc -4 -u -l -v 127.0.0.1 4567
+    ```
+
+    Tabulka níže obsahuje zprávy přijaté na netcat serveru.
+    ```sh
+    Connection received on localhost 56489
+    xloginsusenkatopsecretxloginsusenkatopsecretxloginsusenkatopsecretxloginsusenkatopsecret
+    ```
+    Z tabulky lze vyčíst ze server celkem 4x přijal autentizaci s danými parametry. Bohužel ale nebylo možné poslat odpověď, a tak v klientu vypršel timeout na `AUTH`zprávu a následně po odeslání zprávy `BYE` i na tuto zprávu viz tabulka:
+
+    ```sh
+    /auth xlogin topsecret susenka
+    ERR: MAX TIMEOUTS REACHED.
+    ERR: MAX TIMEOUTS REACHED.
+    ```
+
+2. Studentský UDP server
+   
+   UDP server běží na lokálním rozhraní a je vytvořený jedním ze studentů FIT dostupný [zde](https://github.com/okurka12/ipk_proj1_livestream/blob/main/ipk_server.py)
+   Server dokáže komunikovat velice obdobným způsobem jako referenční fakultní server. Na každou zprávu posílá `CONFIRM` zprávy a každou odeslanou zprávu přepošle s jejím zněním zpět. Výhoda testování byla navíc, že `REPLY` zprávu poslal vždy z dynamického portu, kterému se následně klient musel přizpůsobit, aby mohl zprávu správně doručit zpět.
+
+   Příklad komunikace se jmenovaným serverem ze strany klienta:
+   ```sh
+   /auth xlogin00 topsecret Samik
+    Success: Hi, Samik, this is a successful REPLY message to your AUTH message id=0. You wanted to authenticate under the username xlogin00
+    ahoj, jak to jde?
+    Server: Hi, Samik, This is a reply MSG to your MSG id=1 content='ahoj, jak to jd...'
+    /join jinykanal
+    Success: Hi, Samik, this is a successful REPLY message to your JOIN message id=2. You wanted to join the channel jinykanal
+    ^C
+   ```
+
+    Tabulka níže znázorňuje komunikaci, kterou vidí server:
+    ```
+    started server on 0.0.0.0 port 4567
+
+    Message from 127.0.0.1:52002 came to port 4567:
+    TYPE: AUTH
+    ID: 0
+    USERNAME: 'xlogin00'
+    DISPLAY NAME: 'Samik'
+    SECRET: 'topsecret'
+    b'\x02\x00\x00xlogin00\x00Samik\x00topsecret\x00'
+    Confirming AUTH message id=0
+    sending REPLY with result=1 to AUTH msg id=0
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: CONFIRM
+    REF ID: 62889
+    b'\x00\xf5\xa9'
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: MSG
+    ID: 1
+    DISPLAY NAME: 'Samik'
+    'ahoj, jak to jde?'
+    b'\x04\x00\x01Samik\x00ahoj, jak to jde?\x00'
+    Confirming MSG message id=1
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: CONFIRM
+    REF ID: 25477
+    b'\x00c\x85'
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: JOIN
+    ID: 2
+    DISPLAY NAME: 'Samik'
+    CHANNEL ID: 'jinykanal'
+    b'\x03\x00\x02jinykanal\x00Samik\x00'
+    Confirming JOIN message id=2
+    sending REPLY with result=1 to JOIN msg id=2
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: CONFIRM
+    REF ID: 25430
+    b'\x00cV'
+
+    Message from 127.0.0.1:52002 came to port dyn2:
+    TYPE: BYE
+    ID: 3
+    b'\xff\x00\x03'
+    Confirming BYE message id=3
+    ```
+3. [Wireshark](https://www.wireshark.org/)
+
+    Pro zachycení komunikace mezi klientem a serverem byl rovněž použit program Wireshark s filtrací pro komunikaci UDP, kde byly díky rozšíření pro protokol IPK24-CHAT dobře vidět jednotlivé zprávy. Jako největší výhodu byla možnost zachytit správnou reakci klienta na dynamický port a jeho reakci. (Pro obrázky níže předpokládajme, že nejprve klient posíla zprávy na port 4567).
+    
+    ![Komunikace zachycená ve Wiresharku](image/wireshark1.jpg)
+
+    Na obrázku výše lze vidět zprávu `REPLY`, která přišla z dynamického portu 46719.
+
+
+    ![Komunikace zachycená ve Wiresharku](image/wireshark2.jpg)
+
+    Na obrázku výše lze vidět zprávu `CONFIRM`, která odchází na daný dynamický port 46719.
+
+4. Vlastní udp server
+   
+    Kvůli nemožnosti vlastní testování kombinace posílání zpráv a zároveň implementace čekání na TIMEOUT jednotlivých zpráv byl pro účely testování mnou vytvořen malý jednoduchý server v C++, který blokujícím způsobem čekal na zprávu a poté několik odesílal. Výhodou byla naprostá volnost v posílání zpráv (v daném binárním formátu). V tabulce níže je zachycena komunikace ze strany serveru (klasická posloupnost oveření a odeslání zprávy), kde je vždy v hex formátu vypsána příchozí a odchozí zpráva.
+
+    ```sh
+    UDP Server started on port 4567. Waiting for messages...
+    INCOMING Message in hex: 02 00 00 78 6c 6f 67 69 6e 30 30 00 73 75 73 65 6e 6b 61 00 74 6f 70 73 65 63 72 65 74 00
+
+    00 00 00 00
+    Sent hex message back to client.
+
+    01 00 05 01 00 00 6c 6c 00 00
+    Sent hex message back to client.
+
+    04 00 06 73 65 72 76 65 72 00 68 65 6c 6c 6c 00 00
+    Sent hex message back to client.
+    ```
+
+
+
+5. Referenční fakultní server
+   
+    Jako poslední možnost testů byl zvolen fakultní referenční server, na kterém probíhalo tesstování obdobně jako u TCP varianty, server se chová korektně v souladu se zadáním, proto nebylo možné otestovat TIMEOUT na zprávy a podobné věci.
+
 
 ## Možná vylepšení
 Chatovací klient není dokonalý a obsahuje několik věcí, které by mohly být v budocnu vylepšeny, mezi ně patří například:
@@ -142,6 +346,8 @@ Chatovací klient není dokonalý a obsahuje několik věcí, které by mohly b�
 * Přidání časového razítka při odeslaných a přijatých zprávách
 ## Zdroje
 - Linux manual page - poll(2). [online]. [cit. 2024-04-01]. Dostupné z: https://man7.org/linux/man-pages/man2/poll.2.html
+- [RFC9293] Eddy, W. Transmission Control Protocol (TCP) [online]. Srpen 2022. [cit. 2024-04-01]. DOI: 10.17487/RFC9293. Dostupné z: https://datatracker.ietf.org/doc/html/rfc9293
+- [RFC894] Hornig, C. A Standard for the Transmission of IP Datagrams over Ethernet Networks [online]. Duben 1984. [cit. 2024-04-01]. DOI: 10.17487/RFC894.Dostupné z: https://datatracker.ietf.org/doc/html/rfc894
 - Transmission Control Protocol. In: *Wikipedia: the free encyclopedia*. [online]. 31. 1. 2024. [cit. 2024-04-01]. Dostupné z: https://cs.wikipedia.org/wiki/Transmission_Control_Protocol
 - User Datagram Protocol. In: *Wikipedia: the free encyclopedia*. [online]. 18. 11. 2023. [cit. 2024-04-01]. Dostupné z: https://cs.wikipedia.org/wiki/User_Datagram_Protocol
 - DOSTÁL R. Sockety a C/C++: funkce poll a závěr. [online].  [cit. 2024-04-01]. Dostupné z: https://www.root.cz/clanky/sokety-a-c-funkce-poll-a-zaver

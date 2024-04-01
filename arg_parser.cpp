@@ -1,3 +1,8 @@
+/**
+ * @file arg_parser.cpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
 #include "arg_parser.hpp"
 
 connection_info* CLI_Parser::parse_args(int argc, char* argv[]){

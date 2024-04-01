@@ -1,3 +1,8 @@
+/**
+ * @file socket.cpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
 #include "socket.hpp"
 
 ClientSocket::ClientSocket(int protocol_type){

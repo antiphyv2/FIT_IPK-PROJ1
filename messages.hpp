@@ -1,4 +1,8 @@
-#ifndef MESSAGES_HPP
+/**
+ * @file messages.hpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */#ifndef MESSAGES_HPP
 #define MESSAGES_HPP
 #include <iostream>
 #include <vector>

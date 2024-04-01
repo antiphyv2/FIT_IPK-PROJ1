@@ -1,3 +1,9 @@
+/**
+ * @file main.hpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
+
 #ifndef MAIN_HPP
 #define MAIN_HPP
 

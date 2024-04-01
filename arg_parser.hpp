@@ -1,3 +1,8 @@
+/**
+ * @file arg_parser.hpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
 #ifndef ARG_PARSER_HPP
 #define ARG_PARSER_HPP
 

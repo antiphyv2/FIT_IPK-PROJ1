@@ -1,3 +1,8 @@
+/**
+ * @file messages.cpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
 #include "messages.hpp"
 
 NetworkMessage::NetworkMessage(std::string input_msg, msg_types msg_type) : type(msg_type), ready_to_send(false), display_name(""), message(input_msg){
@@ -344,10 +349,6 @@ void UDPMessage::process_outgoing_msg(){
     } else {
         return;
     }
-    // for (auto byte : udp_buffer) {
-    // std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << " ";
-    // }
-    // std::cout << std::dec << std::endl; 
 }
 
 bool UDPMessage::validate_unique_id(int bytes_rx, std::vector<uint16_t> msg_ids){

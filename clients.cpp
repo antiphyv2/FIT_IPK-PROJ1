@@ -1,3 +1,9 @@
+/**
+ * @file clients.cpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
+
 #include "clients.hpp"
 
 NetworkClient::NetworkClient(connection_info* info) : conn_info(info), socket(new ClientSocket(info->sock_type)), dns_results(nullptr){}
@@ -364,9 +370,6 @@ void UDPClient::handle_timeout(int* confirm_id, int* reply_id, UDPMessage& outgo
         //if waiting for confirm, process it and exit if correct confirm was obtained
         if(confirm_msg_sent){
             if(inbound_msg.get_msg_type() == CONFIRM && inbound_msg.get_ref_msg_id() == outgoing_msg.get_msg_id()){
-                // if(exit){
-                //     exit_program(true, EXIT_FAILURE);
-                // }
                 confirm_msg_sent = false;
                 break;
             }
@@ -406,7 +409,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
     } else if(cl_info.client_state == AUTH_STATE){
         if(inbound_msg.get_msg_type() == CONFIRM){
             uint16_t msg_id = inbound_msg.get_ref_msg_id();
-            //std::cout << "MSG_ID_CONFIRM" << msg_id << std::endl;
             //If ref id of confirm was expected, no longer waiting for confirm
             if(*confirm_id == msg_id){
                 confirm_id_vector.erase(confirm_id_vector.begin());
@@ -426,7 +428,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
                     ip_address->sin_port = htons(server_port);
                     change_server_port = false;
                 }
-                //std::cout << "VECFRONT:" << confirm_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
                 //If ref id of reply was expected, no longer waiting for reply, change state to open
                 if(*reply_id == msg_id){
                     reply_id_vector.erase(reply_id_vector.begin());
@@ -449,7 +450,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
                     ip_address->sin_port = htons(server_port);
                     change_server_port = false;
                 }
-                //std::cout << "VECFRONT:" << reply_id_vector.front() << "MSG_REF_ID" << msg_id << std::endl;
                 //If ref id of reply was expected, no longer waiting for reply, no change of state
                 if(*reply_id == msg_id){
                     reply_id_vector.erase(reply_id_vector.begin());
@@ -489,7 +489,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
             if(*confirm_id == inbound_msg.get_ref_msg_id()){
                 confirm_id_vector.erase(confirm_id_vector.begin());
                 confirm_msg_sent = false;
-                //std::cout << "CONFIRMED ID:" << inbound_msg.get_ref_msg_id() << std::endl;   
             }
             return;
         } else if(inbound_msg.get_msg_type() == REPLY_NOK){
@@ -515,7 +514,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
                     reply_id_vector.erase(reply_id_vector.begin());
                     inbound_msg.print_message();
                     cl_info.reply_msg_sent = false;
-                    //std::cout << "REPLY ID:" << msg_id << std::endl;
                 }
             }
             send_confim_exit(inbound_msg, false);
@@ -538,7 +536,6 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
 
 void UDPClient::start_udp_chat(){
     socket->create_socket(conn_info);
-    //std::cout << "SOCKET TIMEOUT:" << socket->get_socket_tv()->tv_usec << std::endl;
     dns_lookup();
     
     //Poll structure

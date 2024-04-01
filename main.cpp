@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * @author xhejni00
+ * @date 2024-04-01
+ */
+
 #include "main.hpp"
 #include "messages.hpp"
 #include "socket.hpp"
