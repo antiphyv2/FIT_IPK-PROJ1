@@ -131,6 +131,7 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 std::cout << "Available commands:\n/auth {Username} {Secret} {DisplayName}\n/join {ChannelID}\n/rename {DisplayName}\n/help for showing help." << std::endl;
                 break;
             } else {    
+                //User message can not start with '/'
                 if(fragment[0] == '/'){
                     ready_to_send = false;
                     std::cerr << "ERR: Wrong command. Type /help for help" << std::endl;
@@ -199,6 +200,7 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
         }
 
     }
+    //Message can be sent
     return true;
 }
 
