@@ -379,8 +379,7 @@ void UDPClient::handle_timeout(int* confirm_id, int* reply_id, UDPMessage& outgo
 void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, int* confirm_id, int* reply_id, int bytes_rx){
     //Skips message if already seen
     if(*skip_message){
-            std::cout << "SKIPPED";
-            return;
+        return;
     }
 
     //Process the message
@@ -576,7 +575,7 @@ void UDPClient::start_udp_chat(){
             }
             //Find message type and validate id
             skip_message = inbound_msg.validate_unique_id(bytes_rx, seen_ids);
-            std::cout << "MSG TYPE" << inbound_msg.get_msg_type() << std::endl;
+            //std::cout << "MSG TYPE" << inbound_msg.get_msg_type() << std::endl;
             if(!skip_message){
                 if(inbound_msg.get_msg_type() == INVALID_MSG || inbound_msg.get_msg_type() == ERR){
                     if(inbound_msg.get_msg_type() == ERR){
