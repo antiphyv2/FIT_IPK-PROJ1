@@ -131,6 +131,11 @@ bool NetworkMessage::check_user_message(std::vector<std::string>& message_parts)
                 std::cout << "Available commands:\n/auth {Username} {Secret} {DisplayName}\n/join {ChannelID}\n/rename {DisplayName}\n/help for showing help." << std::endl;
                 break;
             } else {    
+                if(fragment[0] == '/'){
+                    ready_to_send = false;
+                    std::cerr << "ERR: Wrong command. Type /help for help" << std::endl;
+                    return false;
+                }
                 type = MSG;
                     if(!validate_msg_param(message, "MSG")){
                         std::cerr << "ERR: Wrong message format or length." << std::endl;
