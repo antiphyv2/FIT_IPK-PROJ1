@@ -2,7 +2,8 @@
 
 connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
     connection_info* cli_info = new connection_info();
-    int cli_arg, server_port;
+    int cli_arg;
+    int server_port = 0;
 
     //getopt arg parsing
     while((cli_arg = getopt(argc, argv, "t:s:p:d:r:h")) != -1){
@@ -58,6 +59,9 @@ connection_info* CLI_Parser::parse_args(int argc, char* argv[]){
 
     if(cli_info->max_udp_retransmission == 0){
         cli_info->max_udp_retransmission = 3;
+    }
+    if(server_port == 0){
+        cli_info->port = "4567";
     }
     return cli_info;
 }

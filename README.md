@@ -4,14 +4,13 @@
 **Autor:** Samuel Hejníček  
 **Datum:** 1. dubna 2024  
 
-Tento soubor je dokumentací k prvnímu projektu do předmětu [IPK], Počítačové komunikace a sítě, veškeré zdrojové soubory jsou dostupné zde: https://git.fit.vutbr.cz/xhejni00/IPK_Project_1
 
 ## Obsah
 - [Dokumentace IPK-24 TCP/UDP Chatovacího klienta](#dokumentace-ipk-24-tcpudp-chatovacího-klienta)
   - [Obsah](#obsah)
   - [Úvod](#úvod)
     - [Stručný popis](#stručný-popis)
-    - [Spuštění programu](#spuštění-programu)
+    - [Spuštění a ovládání programu](#spuštění-a-ovládání-programu)
   - [Základní teorie k pochopení programu](#základní-teorie-k-pochopení-programu)
     - [TCP Protokol](#tcp-protokol)
     - [UDP Protokol](#udp-protokol)
@@ -33,16 +32,13 @@ Tento soubor je dokumentací k prvnímu projektu do předmětu [IPK], Počítač
 
 ## Úvod
 
-Provide an executive summary of the project, its purpose, and what it aims to achieve. This section should be concise and give a clear overview of what the reader can expect from the documentation and the project itself.
+Tento soubor je dokumentací k prvnímu projektu do předmětu [IPK], Počítačové komunikace a sítě, veškeré zdrojové soubory jsou dostupné [zde](https://git.fit.vutbr.cz/xhejni00/IPK_Project_1).
 
 ### Stručný popis
 
-Here, introduce the necessary theoretical concepts that underpin the functionality of the UDP/TCP client. This might include:
-- Basics of UDP and TCP protocols.
-- Differences between UDP and TCP and when to use each.
-- Key networking concepts such as sockets, ports, and IP addresses.
+Program slouží jako chatovací klient schopný komunikace se vzdáleným serverem pomocí protokolu IPK24-CHAT, který zajíšťuje definovaný formát zpráv posílaných mezi sebou.Tento protokol je navíc postaven nad transportní protokoly TCP/UDP, přičemž jeden z nich klient k připojení na vzdálený server používá. Se serverem klient komunikuje pomocí několika definovaných zpráv viz [Spuštění a ovládání programu](#spuštění-a-ovládání-programu). V případě, že chce klient ukončit ukončit komunikaci se serverem, může tak učinit pomocí CTRL-C, které server informuje o konci spojení a ukončí program.
 
-### Spuštění programu
+### Spuštění a ovládání programu
 
 Offer a detailed narrative of the project, including:
 - The architecture of the UDP/TCP client.
