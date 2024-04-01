@@ -1,9 +1,11 @@
 # CHANGELOG UDP/TCP chatovacího klienta IPK24-CHAT
 
 Všechny změny jsou k nahlédnutí v oficiálním repozitáři zde:  https://git.fit.vutbr.cz/xhejni00/IPK_Project_1.
-Význmané změny jsou popsány níže v bodech.
 
-## Významné změny programu
+
+Jednotlivé commity v aktivní fázi vývoje projektu (od 25. 3. 2024) byly v souladu s Conventional commits viz: https://www.conventionalcommits.org/en/v1.0.0/
+
+## Významné změny programu dle data
 
 ### 25. 3. 2024
 - Přidán TCP klient
