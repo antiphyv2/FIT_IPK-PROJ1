@@ -483,7 +483,7 @@ void UDPClient::fsm_logic_handler(bool* skip_message, UDPMessage& inbound_msg, i
             UDPMessage confirm_msg("", CONFIRM, inbound_msg.get_msg_id());
             confirm_msg.process_outgoing_msg();
             send_msg(confirm_msg);
-            exit_program(true, EXIT_FAILURE);
+            exit_program(false, EXIT_FAILURE);
 
         } else if(inbound_msg.get_msg_type() == CONFIRM){
             if(*confirm_id == inbound_msg.get_ref_msg_id()){

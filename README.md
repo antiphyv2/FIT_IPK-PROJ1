@@ -17,10 +17,13 @@
     - [UDP Protokol](#udp-protokol)
     - [Funkce poll](#funkce-poll)
   - [Implementace projektu](#implementace-projektu)
-    - [Návrh](#návrh)
+    - [Obsah souborů](#obsah-souborů)
     - [Zpracování vstupních argumentů](#zpracování-vstupních-argumentů)
     - [Způsob zahájení komunikace](#způsob-zahájení-komunikace)
     - [Příjmání a odesílání zpráv](#příjmání-a-odesílání-zpráv)
+    - [Kontrola syntaxe zpráv](#kontrola-syntaxe-zpráv)
+    - [Validace zpráv dle konečného automatu](#validace-zpráv-dle-konečného-automatu)
+    - [Blokování uživatelského vstupu](#blokování-uživatelského-vstupu)
     - [Ztráta příchozích paketů u UDP](#ztráta-příchozích-paketů-u-udp)
     - [Kontrola čísla příchozích paketů u UDP](#kontrola-čísla-příchozích-paketů-u-udp)
     - [Ukončení programu](#ukončení-programu)
@@ -77,11 +80,11 @@ TCP protokol je protokol transportní vrstvy používán na spolehlivou výměnu
 UDP protokol je protokol transportní vrstvy, který nezajišťuje spolehlivou výměnu dat. UDP je na bázi "best effort delivery", který znamená, že u dat není zaručeno pořadí doručení paketů ani to, že data budou doručena v pořádku. Narozdíl od TCP nemusí navázat žádné spojení před odesláním samotných dat, nemá žádné mechanismy pro opětovné odesílání dat nebo potvrzení přijetí a tyto věci jsou tak řešeny specificky v chatovacím klientovi (opětovné odeslání zprávy, vypršení timeoutu). 
 
 ### Funkce poll
-Funkce poll je funkce standardní knihovny jazyka C, která slouží ke sledování více file descriptorů současně na přicházející události z různých zdrojů. V kontextu chatovacího klienta je přicházející událostí příchozí zpráva od serveru na soket nebo čtení uživatelského vstupu, přičemž funkce poll není blokující a není nutný vícevláknový přístup v programování. Tato funkce je nutná, jelikož např. samotné čekání na zprávu je blokující operace a uživatel by tak musel čekat na zprávu od serveru, která ale není v daném okamžiku vůbec nutná.
+Funkce poll je funkce standardní knihovny jazyka C, která slouží ke sledování více file descriptorů současně na přicházející události z různých zdrojů. V kontextu chatovacího klienta je přicházející událostí příchozí zpráva od serveru na socket nebo čtení uživatelského vstupu, přičemž funkce poll není blokující a není nutný vícevláknový přístup v programování. Tato funkce je nutná, jelikož např. samotné čekání na zprávu je blokující operace a uživatel by tak musel čekat na zprávu od serveru, která ale není v daném okamžiku vůbec nutná.
 
 ## Implementace projektu
 
-### Návrh
+### Obsah souborů
 Projekt je rozdělen do několik zdrojových souborů a díky programovacímu jazyku C++ je napsán se snahou využití objektově orientovaného programování.
 * `main.cpp a main.hpp` - Funkce main a funkce pro korektní ukončení programu s dealokací paměti, statická třída pro odchycení CTRL-C
 * `socket.cpp a socket.hpp` - Třída socket pro uchovávání informací o socketu, jeho tvorby a záník
@@ -93,11 +96,28 @@ Projekt je rozdělen do několik zdrojových souborů a díky programovacímu ja
 Na začátku programu dochází ke zpracování argumentů od uživatele pomocí statické metody `parse_args` a jejich uložení do specifické struktury, v případě nezadaných volitelných argumentů jsou dané hodnoty nastaveny na výchozí a v případě zadání chybného atributu například příliš vysokého čísla portu nebo špatně zvoleného transportního protokolu je program ukončen s chybou.
 
 ### Způsob zahájení komunikace
+Po zpracování argumentů dochází dle parametru typu protokolu k vytvoření instance TCP či UDP klienta a volání odpovídající metody, která zahají hlavní logiku programu. Následně pro oba klienty platí, že dochází k vytvoření socketu a volání metody `dns_lookup`, která pro případné zadané doménové jméno najde odpovídající IP adresu, v opačném případě se program ukončí. U TCP je navíc ještě zavolána funkce `connect`, která se serverem naváže stabilní spojení (narozdíl od UDP). V neposlední řadě dojde k vytvoření struktury pro funkci poll a její naplnění file descriptory pro socket a standardní vstup.
 
 ### Příjmání a odesílání zpráv
+Veškerá komunikace se děje v jediném `while loopu`, kdy podmínka kontroluje zdali je příchozí událost ze standardního vstupu či jde o příchozí zprávu ze serveru a dojde k pokračování v odpovídající větvi. Příjmání zpráv je u TCP řešeno pomocí funkce `recv` a dochází k načítání po 1 bytu, dokud není nalezen ukončovač `/r/n`, u UDP je načitání prováděno pomocí funkce `recvfrom`, jelikož po úspešném příjetí zprávy je potřeba změnit port, na který budou následující zprávy odesílány. Zpráva je narozdíl od TCP načtena naráz, jelikož zpráva do něj přijde vždy 1 (u TCP by takto mohlo v bufferu skončit zpráv více). Kvůli zmíněné změne portu pro UDP je používáná funkce `sendto` a pro TCP pouze funkce `send`.
+
+### Kontrola syntaxe zpráv
+Během příjmání a odesílání zpráv dochází simultánně ke kontrole zpráv od uživatele, které jsou kontrolovány pomocí funkce `check_user_message`, zdali se jedná o příkaz a následně zformátovány do vhodného tvaru pro odeslání v závislosti na TCP/UDP protokolu pomocí funkce `process_outgoing_message` a rovněž dochází ke kontrole zpráv od serveru (funkce `process_inbound_message`), které jsou rozpoznány a předány ke kontrole dále.
+
+### Validace zpráv dle konečného automatu
+Po úspěšné kontrole příchozí zprávy dochází k ověření, že příchozí zpráva může být v daném stavu přijata (výčet stavů automatu je definován pomocí `enum` stavů, stavy `ERR` a `BYE` nejsou přímo implementovány z důvodu jejich nepotřebnosti), v pozitivním případě dochází k jejímu výpisu na odpovídající standardní výstup, v opačném případě dochází k chybě vedoucí k poslání chybové hlášky zpět k serveru nebo rovnou ukončení programu. Rovněž odesílání zpráv může stavy FSM nastavovat (poslání `auth` zprávy udělá přechod do `AUTH` stavu).
+
+### Blokování uživatelského vstupu
+Pokud dojde k odeslání zprávy, který vyžaduje odpověď tj. `CONFIRM` a `REPLY` u UDP a `REPLY` u TCP, dojde k zablokování vstupu od uživatele (respektive poll nebude brát v potaz uživatelský vstup). Po přijatí očekáváné zprávy dojde opět k odblokování a zpracování zpráv, které mohl uživatel v mezičase zadat.
+
 ### Ztráta příchozích paketů u UDP 
+Kvůli podstatě UDP komunikace zmíněné dříve je u UDP klienta nastaven na socket časový interval , který určuje dobu, do které na jakoukoliv odeslanou uživatelskou zprávu musí přijít zpráva typu `CONFIRM`. Pokud do daného intervalu zpráva nepřijde, je zvýšen čítač pokusů odeslané zprávy a zpráva je odeslána znovu. Tento proces se opakuje do té doby než je dosažen maximální limit počtu opětovně odeslaných zpráv a program je ukončen. Na potvrzovací zprávu se čeká i v případě odeslání zprávy `BYE` od klienta. Správné a včasné přijetí zprávy `CONFIRM` zajišťuje funkce `handle_timeout`. V případě, že před zprávou `CONFIRM` dorazí zpráva jiného typu, je zpracována a zvalidována odpovídajícím způsobem popsaným výše.
+
 ### Kontrola čísla příchozích paketů u UDP
+U UDP komunikace může dojít k přijetí zprávy s duplicitním `MessageID`. V takovém případě je daná zpráva zahozena, a tedy ignorována. Validace probíhá tím způsobem, že u každé přijaté zprávy je její `MessageID` uloženo do vektoru `seen_ids`. U každé následující přijaté zprávy je nejprve nahlédnuto do tohoto vektoru a v případě nalezení daného identifikátoru je zpráva ignorována.
+
 ### Ukončení programu
+Ukončení programu je realizováno pomocí příkazu CTRL-C, příkazu CTRL-D (tedy poslání konce souboru) nebo pokud je konec v souladu s konečným automatem ze zadání projektu, tedy např. server pošle `BYE` zprávu. V každém případě se volá funkce `exit_program`, která dle předaných parametrů rozhodne, zdali je třeba ještě před koncem poslat `BYE` zprávu (pokud ano, je zpráva poslána a v případě UDP je také očekávána zpráva `CONFIRM`), program ukončí a dealokuje paměť. 
 
 ## Testování programu
 
